@@ -54,7 +54,6 @@ extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
     ) {
         if !isSelected && updateCell {
             let cell = getCell(for: photoAsset)
-            cell?.isRequestDirectly = true
             cell?.photoAsset = photoAsset
         }
         updateCellSelectedTitle()
@@ -71,9 +70,5 @@ extension PhotoPickerViewController: PhotoPreviewViewControllerDelegate {
         if photoAsset.isSelected {
             bottomView.updateFinishButtonTitle()
         }
-    }
-    
-    func previewViewController(_ previewController: PhotoPreviewViewController, requestSucceed photoAsset: PhotoAsset) {
-        resetICloud(for: photoAsset)
     }
 }

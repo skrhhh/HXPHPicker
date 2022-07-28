@@ -41,15 +41,8 @@ public class PhotoEditorCropToolView: UIView {
         return collectionView
     }()
     
-    let ratioModels: [PhotoEditorCropToolModel]
-    var showRatios: Bool
-    var themeColor: UIColor?
-    var currentSelectedModel: PhotoEditorCropToolModel?
-    init(
-        showRatios: Bool,
-        scaleArray: [[Int]]
-    ) {
-        self.showRatios = showRatios
+    lazy var ratioModels: [PhotoEditorCropToolModel] = {
+        let scaleArray = [[0, 0], [1, 1], [3, 2], [2, 3], [4, 3], [3, 4], [16, 9], [9, 16]]
         var ratioModels: [PhotoEditorCropToolModel] = []
         for ratioArray in scaleArray {
             let model = PhotoEditorCropToolModel.init()
@@ -61,7 +54,13 @@ public class PhotoEditorCropToolView: UIView {
             }
             ratioModels.append(model)
         }
-        self.ratioModels = ratioModels
+        return ratioModels
+    }()
+    var showRatios: Bool
+    var themeColor: UIColor?
+    var currentSelectedModel: PhotoEditorCropToolModel?
+    init(showRatios: Bool) {
+        self.showRatios = showRatios
         super.init(frame: .zero)
         
         addSubview(collectionView)
@@ -265,7 +264,7 @@ class PhotoEditorCropToolHeaderView: UICollectionReusableView {
         mirrorHorizontallyButton.centerY = rotateButton.centerY
         
         lineView.x = width - 2
-        lineView.centerY = mirrorHorizontallyButton.centerY
+        lineView.centerY = rotateButton.centerY
     }
     
     required init?(coder: NSCoder) {
@@ -293,7 +292,6 @@ class PhotoEditorCropToolViewCell: UICollectionViewCell {
         label.textColor = .white
         label.textAlignment = .center
         label.font = UIFont.mediumPingFang(ofSize: 12)
-        label.adjustsFontSizeToFitWidth = true
         return label
     }()
     var themeColor: UIColor?

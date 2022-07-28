@@ -69,20 +69,13 @@ extension PhotoPickerViewController {
     }
     func fetchPhotoAssets() {
         guard let picker = pickerController else { return }
-        picker.fetchPhotoAssets(
-            assetCollection: assetCollection
-        ) { [weak self] (photoAssets, photoAsset, photoCount, videoCount) in
+        picker.fetchPhotoAssets(assetCollection: assetCollection) { [weak self] (photoAssets, photoAsset) in
             guard let self = self else { return }
-            self.didFetchAsset = true
+            self.canAddCamera = true
             self.assets = photoAssets
-            self.photoCount = photoCount
-            self.videoCount = videoCount
             self.setupEmptyView()
             self.collectionView.reloadData()
-//            DispatchQueue.main.async {
-//                // collectionView reload 完成之后
-                self.scrollToAppropriatePlace(photoAsset: photoAsset)
-//            }
+            self.scrollToAppropriatePlace(photoAsset: photoAsset)
             if self.showLoading {
                 ProgressHUD.hide(forView: self.view, animated: true)
                 self.showLoading = false

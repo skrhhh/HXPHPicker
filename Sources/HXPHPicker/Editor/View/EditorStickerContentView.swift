@@ -22,11 +22,14 @@ struct EditorStickerItem {
     let imageData: Data?
     let text: EditorStickerText?
     let music: VideoEditorMusic?
+    let videoSize: CGSize?
     var frame: CGRect {
         var width = UIScreen.main.bounds.width - 80
         if music != nil {
             let height: CGFloat = 60
-            width = UIScreen.main.bounds.width - 40
+            if let videoSize = videoSize {
+                width = videoSize.width - 40
+            }
             return CGRect(origin: .zero, size: CGSize(width: width, height: height))
         }
         if text != nil {
@@ -62,6 +65,7 @@ struct EditorStickerItem {
         self.imageData = imageData
         self.text = text
         self.music = music
+        self.videoSize = videoSize
     }
 }
 
@@ -106,6 +110,7 @@ extension EditorStickerItem: Codable {
         case imageData
         case text
         case music
+        case videoSize
     }
     
     init(from decoder: Decoder) throws {
@@ -127,6 +132,7 @@ extension EditorStickerItem: Codable {
         self.image = image
         text = try container.decodeIfPresent(EditorStickerText.self, forKey: .text)
         music = try container.decodeIfPresent(VideoEditorMusic.self, forKey: .music)
+        videoSize = try container.decodeIfPresent(CGSize.self, forKey: .videoSize)
     }
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -148,6 +154,7 @@ extension EditorStickerItem: Codable {
         }
         try container.encodeIfPresent(text, forKey: .text)
         try container.encodeIfPresent(music, forKey: .music)
+        try container.encodeIfPresent(videoSize, forKey: .videoSize)
     }
 }
 
@@ -180,13 +187,15 @@ class EditorStickerContentView: UIView {
         }
         return view
     }()
-    var scale: CGFloat = 1
     var item: EditorStickerItem
     weak var timer: Timer?
     init(item: EditorStickerItem) {
         self.item = item
         super.init(frame: item.frame)
         if item.music != nil {
+            layer.shadowColor = UIColor.black.withAlphaComponent(0.6).cgColor
+            layer.shadowOpacity = 0.4
+            layer.shadowOffset = CGSize(width: 0, height: 1)
             addSubview(animationView)
             layer.addSublayer(textLayer)
             CATransaction.begin()
@@ -198,41 +207,31 @@ class EditorStickerContentView: UIView {
             }
             CATransaction.commit()
             updateText()
-            startTimer()
+            let timer = Timer.scheduledTimer(
+                withTimeInterval: 0.5,
+                repeats: true, block: { [weak self] timer in
+                    if let player = PhotoManager.shared.audioPlayer {
+                        CATransaction.begin()
+                        CATransaction.setDisableActions(true)
+                        let lyric = self?.item.music?.lyric(atTime: player.currentTime)
+                        self?.textLayer.string = lyric?.lyric
+                        self?.updateText()
+                        CATransaction.commit()
+//                        print(player.currentTime)
+                    }else {
+                        timer.invalidate()
+                        self?.timer = nil
+                    }
+//                    print("正在循环")
+            })
+            RunLoop.current.add(timer, forMode: .common)
+            self.timer = timer
         }else {
             if item.text != nil {
                 imageView.layer.shadowColor = UIColor.black.withAlphaComponent(0.8).cgColor
             }
             addSubview(imageView)
         }
-        layer.shadowOpacity = 0.4
-        layer.shadowOffset = CGSize(width: 0, height: 1)
-        layer.shouldRasterize = true
-        layer.rasterizationScale = UIScreen.main.scale
-    }
-    func startTimer() {
-        invalidateTimer()
-        let timer = Timer.scheduledTimer(
-            withTimeInterval: 0.5,
-            repeats: true, block: { [weak self] timer in
-                if let player = PhotoManager.shared.audioPlayer {
-                    let lyric = self?.item.music?.lyric(atTime: player.currentTime)
-                    if let str = self?.textLayer.string as? String,
-                       let lyricStr = lyric?.lyric,
-                       str == lyricStr {
-                       return
-                    }
-                    CATransaction.begin()
-                    CATransaction.setDisableActions(true)
-                    self?.textLayer.string = lyric?.lyric
-                    self?.updateText()
-                    CATransaction.commit()
-                }else {
-                    timer.invalidate()
-                    self?.timer = nil
-                }
-        })
-        self.timer = timer
     }
     func invalidateTimer() {
         self.timer?.invalidate()
@@ -240,21 +239,13 @@ class EditorStickerContentView: UIView {
     }
     func update(item: EditorStickerItem) {
         self.item = item
-        if !frame.equalTo(item.frame) {
-            frame = item.frame
-        }
-        if imageView.image != item.image {
-            imageView.image = item.image
-        }
+        frame = item.frame
+        imageView.image = item.image
     }
     func updateText() {
-        if var height = (textLayer.string as? String)?.height(
-            ofFont: textLayer.font as! UIFont, maxWidth: width * scale
-        ) {
+        if var height = (textLayer.string as? String)?.height(ofFont: textLayer.font as! UIFont, maxWidth: width) {
             height = min(100, height)
-            if textLayer.frame.height != height {
-                textLayer.frame = CGRect(origin: .zero, size: CGSize(width: width * scale, height: height))
-            }
+            textLayer.frame = CGRect(origin: .zero, size: CGSize(width: width, height: height))
         }
         animationView.frame = CGRect(x: 2, y: -23, width: 20, height: 15)
     }

@@ -25,7 +25,6 @@ extension PhotoPreviewViewController: PhotoPickerBottomViewDelegate {
             return
         }
         #if HXPICKER_ENABLE_EDITOR && HXPICKER_ENABLE_PICKER
-        beforeNavDelegate = navigationController?.delegate
         let pickerConfig = picker.config
         if photoAsset.mediaType == .video && pickerConfig.editorOptions.isVideo {
             let cell = getCell(
@@ -38,24 +37,10 @@ extension PhotoPreviewViewController: PhotoPickerBottomViewDelegate {
             )
             if isExceedsTheLimit {
                 videoEditorConfig = pickerConfig.videoEditor.mutableCopy() as! VideoEditorConfiguration
-                videoEditorConfig.defaultState = .cropTime
+                videoEditorConfig.defaultState = .cropping
                 videoEditorConfig.mustBeTailored = true
             }else {
                 videoEditorConfig = pickerConfig.videoEditor
-            }
-            if !picker.shouldEditVideoAsset(
-                videoAsset: photoAsset,
-                editorConfig: videoEditorConfig,
-                atIndex: currentPreviewIndex
-            ) {
-                return
-            }
-            if let shouldEdit = delegate?.previewViewController(
-                self,
-                shouldEditVideoAsset: photoAsset,
-                editorConfig: videoEditorConfig
-            ), !shouldEdit {
-                return
             }
             videoEditorConfig.languageType = pickerConfig.languageType
             videoEditorConfig.appearanceStyle = pickerConfig.appearanceStyle
@@ -67,29 +52,12 @@ extension PhotoPreviewViewController: PhotoPickerBottomViewDelegate {
             )
             videoEditorVC.coverImage = cell?.scrollContentView.imageView.image
             videoEditorVC.delegate = self
-            if pickerConfig.editorCustomTransition {
-                navigationController?.delegate = videoEditorVC
-            }
             navigationController?.pushViewController(
                 videoEditorVC,
                 animated: true
             )
         }else if pickerConfig.editorOptions.isPhoto {
             let photoEditorConfig = pickerConfig.photoEditor
-            if !picker.shouldEditPhotoAsset(
-                photoAsset: photoAsset,
-                editorConfig: photoEditorConfig,
-                atIndex: currentPreviewIndex
-            ) {
-                return
-            }
-            if let shouldEdit = delegate?.previewViewController(
-                self,
-                shouldEditPhotoAsset: photoAsset,
-                editorConfig: photoEditorConfig
-            ), !shouldEdit {
-                return
-            }
             photoEditorConfig.languageType = pickerConfig.languageType
             photoEditorConfig.appearanceStyle = pickerConfig.appearanceStyle
             photoEditorConfig.indicatorType = pickerConfig.indicatorType
@@ -99,9 +67,6 @@ extension PhotoPreviewViewController: PhotoPickerBottomViewDelegate {
                 config: photoEditorConfig
             )
             photoEditorVC.delegate = self
-            if pickerConfig.editorCustomTransition {
-                navigationController?.delegate = photoEditorVC
-            }
             navigationController?.pushViewController(
                 photoEditorVC,
                 animated: true
@@ -201,7 +166,7 @@ extension PhotoPreviewViewController: PhotoPickerBottomViewDelegate {
         }
         let inICloud = photoAsset.checkICloundStatus(
             allowSyncPhoto: pickerController.config.allowSyncICloudWhenSelectPhoto
-        ) { _, isSuccess in
+        ) { isSuccess in
             if isSuccess {
                 addAsset()
             }
@@ -265,22 +230,5 @@ extension PhotoPreviewViewController: PhotoPickerBottomViewDelegate {
             }
             setupRequestPreviewTimer()
         }
-    }
-    
-    public func setOriginal(_ isOriginal: Bool) {
-        bottomView.boxControl.isSelected =  isOriginal
-        if !isOriginal {
-            // 取消
-            bottomView.cancelRequestAssetFileSize()
-        }else {
-            // 选中
-            bottomView.requestAssetBytes()
-        }
-        pickerController?.isOriginal = isOriginal
-        pickerController?.originalButtonCallback()
-        delegate?.previewViewController(
-            self,
-            didOriginalButton: isOriginal
-        )
     }
 }

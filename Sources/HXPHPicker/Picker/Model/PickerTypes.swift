@@ -14,7 +14,7 @@ public struct PickerAssetOptions: OptionSet {
     public static let photo = PickerAssetOptions(rawValue: 1 << 0)
     /// Video 视频
     public static let video = PickerAssetOptions(rawValue: 1 << 1)
-    /// Gif 动图（包括静态图）
+    /// Gif 动图
     public static let gifPhoto = PickerAssetOptions(rawValue: 1 << 2)
     /// LivePhoto 实况照片
     public static let livePhoto = PickerAssetOptions(rawValue: 1 << 3)
@@ -53,11 +53,8 @@ public enum SelectionTapAction: Equatable {
     /// 打开编辑器
     /// - 点击资源时如果可以编辑的话，就会进入编辑界面
     case openEditor
-}
-
-public enum PickerPresentStyle {
-    case present
-    case push
+    
+    case previewThenEditor
 }
 
 public extension PickerResult {
@@ -88,14 +85,12 @@ public extension PhotoAsset {
         case imageAnimated
         /// 手机相册里的LivePhoto
         case livePhoto
-        /// 手机相册里的视频
-        case video
         /// 本地图片
         case localImage
+        /// 手机相册里的视频
+        case video
         /// 本地视频
         case localVideo
-        /// 本地LivePhoto
-        case localLivePhoto
         /// 本地动图
         case localGifImage
         /// 网络图片
@@ -105,7 +100,7 @@ public extension PhotoAsset {
         
         public var isLocal: Bool {
             switch self {
-            case .localImage, .localGifImage, .localVideo, .localLivePhoto:
+            case .localImage, .localGifImage, .localVideo:
                 return true
             default:
                 return false
@@ -114,7 +109,7 @@ public extension PhotoAsset {
         
         public var isPhoto: Bool {
             switch self {
-            case .image, .imageAnimated, .livePhoto, .localImage, .localLivePhoto, .localGifImage, .networkImage(_):
+            case .image, .imageAnimated, .livePhoto, .localImage, .localGifImage, .networkImage(_):
                 return true
             default:
                 return false

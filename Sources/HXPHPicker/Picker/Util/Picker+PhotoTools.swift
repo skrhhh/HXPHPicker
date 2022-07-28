@@ -130,10 +130,12 @@ extension PhotoTools {
     /// - Parameters:
     ///   - avAsset: 视频对应的 AVAsset 数据
     ///   - outputURL: 指定视频导出的地址，为nil时默认为临时目录
-    ///   - startTime: 需要裁剪的开始时间
-    ///   - endTime: 需要裁剪的结束时间
-    ///   - exportPreset: 导出的分辨率
-    ///   - videoQuality: 导出的质量
+    ///   - timeRang: 需要裁剪的时间区域
+    ///   - overlayImage: 贴纸
+    ///   - audioURL: 需要添加的音频地址
+    ///   - audioVolume: 需要添加的音频音量
+    ///   - originalAudioVolume: 视频原始音频音量
+    ///   - presentName: 导出的质量
     ///   - completion: 导出完成
     @discardableResult
     public static func exportEditVideo(
@@ -143,41 +145,25 @@ extension PhotoTools {
         endTime: TimeInterval,
         exportPreset: ExportPreset = .ratio_960x540,
         videoQuality: Int = 5,
-        completion: ((URL?, Error?) -> Void)?
-    ) -> AVAssetExportSession? {
-        let exportPresets = AVAssetExportSession.exportPresets(compatibleWith: avAsset)
-        if exportPresets.contains(exportPreset.name) {
-            guard let videoTrack = avAsset.tracks(withMediaType: .video).first else {
-                completion?(nil, NSError(domain: "Video track is nil", code: 500, userInfo: nil))
-                return nil
-            }
+        completion:
+            @escaping (URL?, Error?) -> Void) -> AVAssetExportSession? {
+        if AVAssetExportSession.exportPresets(
+            compatibleWith: avAsset).contains(exportPreset.name) {
             let videoURL = outputURL == nil ? PhotoTools.getVideoTmpURL() : outputURL
             if let exportSession = AVAssetExportSession(
                 asset: avAsset,
-                presetName: exportPreset.name
-            ) {
+                presetName: exportPreset.name) {
                 let timescale = avAsset.duration.timescale
                 let start = CMTime(value: CMTimeValue(startTime * TimeInterval(timescale)), timescale: timescale)
-                let timeRang: CMTimeRange
-                let videoTotalSeconds = videoTrack.timeRange.duration.seconds
-                if startTime + endTime > videoTotalSeconds {
-                    timeRang = CMTimeRange(
-                        start: start,
-                        duration: CMTime(
-                            seconds: videoTotalSeconds - startTime,
-                            preferredTimescale: timescale
-                        )
-                    )
-                }else {
-                    let end = CMTime(value: CMTimeValue(endTime * TimeInterval(timescale)), timescale: timescale)
-                    timeRang = CMTimeRange(start: start, end: end)
-                }
+                let end = CMTime(value: CMTimeValue(endTime * TimeInterval(timescale)), timescale: timescale)
+                let timeRang = CMTimeRange(start: start, end: end)
+                
                 let supportedTypeArray = exportSession.supportedFileTypes
                 exportSession.outputURL = videoURL
                 if supportedTypeArray.contains(AVFileType.mp4) {
                     exportSession.outputFileType = .mp4
                 }else if supportedTypeArray.isEmpty {
-                    completion?(nil, PhotoError.error(type: .exportFailed, message: "不支持导出该类型视频"))
+                    completion(nil, PhotoError.error(type: .exportFailed, message: "不支持导出该类型视频"))
                     return nil
                 }else {
                     exportSession.outputFileType = supportedTypeArray.first
@@ -197,43 +183,43 @@ extension PhotoTools {
                     DispatchQueue.main.async {
                         switch exportSession.status {
                         case .completed:
-                            completion?(videoURL, nil)
+                            completion(videoURL, nil)
                         case .failed, .cancelled:
-                            completion?(nil, exportSession.error)
+                            completion(nil, exportSession.error)
                         default: break
                         }
                     }
                 })
                 return exportSession
             }else {
-                completion?(nil, PhotoError.error(type: .exportFailed, message: "不支持导出该类型视频"))
+                completion(nil, PhotoError.error(type: .exportFailed, message: "不支持导出该类型视频"))
+                return nil
             }
         }else {
-            completion?(nil, PhotoError.error(type: .exportFailed, message: "设备不支持导出：" + exportPreset.name))
+            completion(nil, PhotoError.error(type: .exportFailed, message: "设备不支持导出：" + exportPreset.name))
+            return nil
         }
-        return nil
     }
     
-    @discardableResult
     public static func getVideoDuration(
         for photoAsset: PhotoAsset,
         completionHandler:
             @escaping (PhotoAsset, TimeInterval) -> Void
-    ) -> AVAsset? {
+    ) {
         if photoAsset.mediaType == .video {
             var url: URL?
             if let videoAsset = photoAsset.localVideoAsset,
                photoAsset.isLocalAsset {
                 if videoAsset.duration > 0 {
                     completionHandler(photoAsset, videoAsset.duration)
-                    return nil
+                    return
                 }
                 url = videoAsset.videoURL
             }else if let videoAsset = photoAsset.networkVideoAsset,
                      photoAsset.mediaSubType.isNetwork {
                 if videoAsset.duration > 0 {
                     completionHandler(photoAsset, videoAsset.duration)
-                    return nil
+                    return
                 }
                 let key = videoAsset.videoURL.absoluteString
                 if isCached(forVideo: key) {
@@ -245,12 +231,6 @@ extension PhotoTools {
             if let url = url {
                 let avAsset = AVURLAsset(url: url)
                 avAsset.loadValuesAsynchronously(forKeys: ["duration"]) {
-                    if avAsset.statusOfValue(forKey: "duration", error: nil) != .loaded {
-                        DispatchQueue.main.async {
-                            completionHandler(photoAsset, 0)
-                        }
-                        return
-                    }
                     let duration = avAsset.duration.seconds
                     if photoAsset.isNetworkAsset {
                         photoAsset.networkVideoAsset?.duration = duration
@@ -262,10 +242,8 @@ extension PhotoTools {
                         completionHandler(photoAsset, duration)
                     }
                 }
-                return avAsset
             }
         }
-        return nil
     }
     
     /// 将字节转换成字符串
@@ -281,26 +259,23 @@ extension PhotoTools {
     
     /// 获取和微信主题一致的配置
     // swiftlint:disable function_body_length
-    public static func getWXPickerConfig(
-        isMoment: Bool = false
-    ) -> PickerConfiguration {
+    public static func getWXPickerConfig(isMoment: Bool = false) -> PickerConfiguration {
         // swiftlint:enable function_body_length
-        let config = PickerConfiguration()
-        PhotoManager.shared.createLanguageBundle(languageType: config.languageType)
+        let config = PickerConfiguration.init()
         if isMoment {
             config.maximumSelectedCount = 9
             config.maximumSelectedVideoCount = 1
             config.videoSelectionTapAction = .openEditor
             config.allowSelectedTogether = false
-            config.maximumSelectedVideoDuration = 60
-        }else {
-            config.maximumSelectedVideoDuration = 480
+            config.maximumSelectedVideoDuration = 15
+        } else {
+            config.maximumSelectedVideoDuration = 30
             config.maximumSelectedCount = 9
             config.maximumSelectedVideoCount = 0
             config.allowSelectedTogether = true
         }
         let wxColor = "#07C160".color
-        config.selectOptions = [.gifPhoto, .video]
+        config.selectOptions = [.video]
         config.albumShowMode = .popup
         config.appearanceStyle = .normal
         config.navigationViewBackgroundColor = "#2E2F30".color
@@ -326,23 +301,10 @@ extension PhotoTools {
         config.photoList.titleView.arrow.backgroundColor = "#B2B2B2".color
         config.photoList.titleView.arrow.arrowColor = "#2E2F30".color
         
-        config.photoList.cell.customSelectableCellClass = PhotoPickerWeChatViewCell.self
         config.photoList.cell.selectBox.selectedBackgroundColor = wxColor
         config.photoList.cell.selectBox.titleColor = .white
-        config.photoList.cell.selectBox.style = .tick
-        config.photoList.cell.selectBox.size = CGSize(width: 23, height: 23)
         
-        #if canImport(Kingfisher)
-        config.photoList.cell.kf_indicatorColor = .white
-        #endif
-        
-        config.photoList.cameraCell.backgroundColor = "#404040".color
         config.photoList.cameraCell.cameraImageName = "hx_picker_photoList_photograph_white"
-        
-        config.photoList.limitCell.backgroundColor = "#404040".color
-        config.photoList.limitCell.lineColor = .white
-        config.photoList.limitCell.titleColor = .white
-        config.photoList.assetNumber.textColor = "#ffffff".color
         
         config.photoList.bottomView.barStyle = .black
         config.photoList.bottomView.previewButtonTitleColor = .white
@@ -370,10 +332,9 @@ extension PhotoTools {
         config.previewView.backgroundColor = .black
         config.previewView.selectBox.tickColor = .white
         config.previewView.selectBox.selectedBackgroundColor = wxColor
-        config.previewView.livePhotoMark.blurStyle = .dark
-        config.previewView.livePhotoMark.textColor = "#ffffff".color
-        config.previewView.livePhotoMark.imageColor = "#ffffff".color
+        
         config.previewView.bottomView.barStyle = .black
+        
         config.previewView.bottomView.originalButtonTitleColor = .white
         config.previewView.bottomView.originalSelectBox.backgroundColor = .clear
         config.previewView.bottomView.originalSelectBox.borderColor = .white
@@ -386,25 +347,19 @@ extension PhotoTools {
         config.previewView.bottomView.finishButtonDisableBackgroundColor = "#666666".color.withAlphaComponent(0.3)
         
         config.previewView.bottomView.selectedViewTickColor = wxColor
-        config.previewView.disableFinishButtonWhenNotSelected = true
         
         #if HXPICKER_ENABLE_EDITOR
         config.previewView.bottomView.editButtonTitleColor = .white
         
-        config.videoEditor.cropTime.maximumVideoCroppingTime = 60
-        config.videoEditor.cropSize.aspectRatioSelectedColor = wxColor
-        config.videoEditor.cropConfirmView.finishButtonBackgroundColor = wxColor
-        config.videoEditor.cropConfirmView.finishButtonDarkBackgroundColor = wxColor
+        config.videoEditor.cropping.maximumVideoCroppingTime = 15
+        config.videoEditor.cropView.finishButtonBackgroundColor = wxColor
+        config.videoEditor.cropView.finishButtonDarkBackgroundColor = wxColor
         config.videoEditor.toolView.finishButtonBackgroundColor = wxColor
         config.videoEditor.toolView.finishButtonDarkBackgroundColor = wxColor
         config.videoEditor.toolView.toolSelectedColor = wxColor
         config.videoEditor.toolView.musicSelectedColor = wxColor
         config.videoEditor.music.tintColor = wxColor
         config.videoEditor.text.tintColor = wxColor
-        config.videoEditor.filter = .init(
-            infos: defaultVideoFilters(),
-            selectedColor: wxColor
-        )
         
         config.photoEditor.toolView.toolSelectedColor = wxColor
         config.photoEditor.toolView.finishButtonBackgroundColor = wxColor
@@ -421,7 +376,7 @@ extension PhotoTools {
         
         #if HXPICKER_ENABLE_CAMERA
         let cameraConfig = CameraConfiguration()
-        cameraConfig.videoMaximumDuration = 60
+        cameraConfig.videoMaximumDuration = 15
         cameraConfig.tintColor = wxColor
         config.photoList.cameraType = .custom(cameraConfig)
         #endif

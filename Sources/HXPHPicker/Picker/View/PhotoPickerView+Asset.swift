@@ -10,8 +10,7 @@ import UIKit
 extension PhotoPickerView {
     
     /// 重新加载Asset
-    /// 可以通过获取相册集合 manager.fetchAssetCollections()
-    /// - Parameter assetCollection: 相册
+    /// - Parameter assetCollection: 相册集合
     public func reloadAsset(assetCollection: PhotoAssetCollection?) {
         if assetCollection == nil {
             if config.allowAddCamera {
@@ -52,12 +51,14 @@ extension PhotoPickerView {
                 self.setupDeniedView()
                 return
             }
-            self.manager.reloadAssetCollection = {
+            self.manager.reloadAssetCollection = { [weak self] in
+                guard let self = self else { return }
                 self.showLoading()
             }
             self.showLoading()
-            self.manager.fetchAssets {
-                self.fetchAssetCompletion($0, $1)
+            self.manager.fetchAssets { [weak self] photoAssets, photoAsset in
+                guard let self = self else { return }
+                self.fetchAssetCompletion(photoAssets, photoAsset)
             }
         }
     }
@@ -68,8 +69,6 @@ extension PhotoPickerView {
         updateCellSelectedState(for: index, isSelected: false)
     }
     
-    /// 取消选择
-    /// - Parameter photoAsset: 对应的 PhotoAsset
     public func deselect(at photoAsset: PhotoAsset) {
         if let index = getIndexPath(for: photoAsset)?.item {
             deselect(at: index)
@@ -83,8 +82,6 @@ extension PhotoPickerView {
     }
     
     /// 移除选择的内容
-    /// 只是移除的manager里的已选数据
-    /// cell选中状态需要调用 deselectAll()
     public func removeSelectedAssets() {
         manager.removeSelectedAssets()
     }
@@ -92,7 +89,7 @@ extension PhotoPickerView {
     /// 清空
     public func clear() {
         removeSelectedAssets()
-        didFetchAsset = false
+        canAddCamera = false
         allowPreview = false
         isFirst = true
         assets.removeAll()
@@ -117,7 +114,7 @@ extension PhotoPickerView {
     ) {
         resetScrollCell()
         if isFirst {
-            didFetchAsset = true
+            canAddCamera = true
             allowPreview = true
             isFirst = false
         }

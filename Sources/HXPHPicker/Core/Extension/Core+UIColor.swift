@@ -8,7 +8,7 @@
 
 import UIKit
 
-extension UIColor: HXPickerCompatible {
+extension UIColor {
     
     convenience init(hexString: String) {
         let hexString = hexString.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -27,7 +27,7 @@ extension UIColor: HXPickerCompatible {
         let blue  = CGFloat(b) / 255.0
         self.init(red: red, green: green, blue: blue, alpha: 1)
     }
-    class var systemTintColor: UIColor {
+    public class var systemTintColor: UIColor {
         UIColor.init(red: 0, green: 0.47843137254901963, blue: 1, alpha: 1)
     }
     
@@ -40,11 +40,5 @@ extension UIColor: HXPickerCompatible {
             return true
         }
         return false
-    }
-}
-
-public extension HXPickerWrapper where Base: UIColor {
-    static var systemTintColor: UIColor {
-        Base.systemTintColor
     }
 }

@@ -50,11 +50,11 @@ public struct PhotoListConfiguration {
     /// 允许 Haptic Touch 预览，iOS13 以上
     public var allowHapticTouchPreview: Bool = true
     
-    /// Haptic Touch 预览时允许添加菜单，iOS13 以上
+    /// Haptic Touch 预览时允许添加菜案，iOS13 以上
     public var allowAddMenuElements: Bool = true
     
     /// 允许滑动选择
-    public var allowSwipeToSelect: Bool = false
+    public var allowSwipeToSelect: Bool = true
     
     /// 滑动选择时允许自动向上/下滚动
     /// 当 allowSyncICloudWhenSelectPhoto = true 时，自动滚动失效
@@ -79,7 +79,7 @@ public struct PhotoListConfiguration {
     public var allowAddCamera: Bool = true
     
     /// 相机cell配置
-    public var cameraCell: CameraCell = .init()
+    public var cameraCell: PhotoListCameraCellConfiguration = .init()
     
     /// 单选模式下，拍照完成之后直接选中并且完成选择
     public var finishSelectionAfterTakingPhoto: Bool = false
@@ -95,17 +95,6 @@ public struct PhotoListConfiguration {
     
     /// 保存在自定义相册的名字，为空时则取 BundleName
     public var customAlbumName: String?
-    
-    /// 当相册权限为选中的照片时，允许添加更多cell，选择更多照片/视频
-    public var allowAddLimit: Bool = true
-    
-    /// 当相册权限为选中的照片时，添加照片cell的配置
-    public var limitCell: LimitCell = .init()
-    
-    /// 底部显示 照片/视频 数量
-    public var showAssetNumber: Bool = true
-    
-    public var assetNumber: AssetNumber = .init()
     
     /// 没有资源时展示的相关配置
     public var emptyView: EmptyViewConfiguration = .init()
@@ -149,77 +138,5 @@ extension PhotoListConfiguration {
             }
         }
         #endif
-    }
-}
-
-// MARK: 照片列表相机Cell配置类
-extension PhotoListConfiguration {
-    
-    public struct CameraCell {
-        
-        /// 允许相机预览
-        public var allowPreview: Bool = false
-        
-        /// 背景颜色
-        public var backgroundColor: UIColor? = "#f1f1f1".color
-        
-        /// 暗黑风格下背景颜色
-        public var backgroundDarkColor: UIColor? = "#404040".color
-        
-        /// 相机图标
-        public var cameraImageName: String = "hx_picker_photoList_photograph"
-        
-        /// 暗黑风格下的相机图标 / 相机预览成功之后的图标
-        public var cameraDarkImageName: String = "hx_picker_photoList_photograph_white"
-        
-        public init() { }
-    }
-}
-
-extension PhotoListConfiguration {
-    
-    public struct LimitCell {
-        
-        /// 背景颜色
-        public var backgroundColor: UIColor? = "#f1f1f1".color
-        
-        /// 背景颜色
-        public var backgroundDarkColor: UIColor? = "#404040".color
-        
-        /// 加号颜色
-        public var lineColor: UIColor = "#999999".color
-        
-        /// 加号暗黑模式下的颜色
-        public var lineDarkColor: UIColor = "#ffffff".color
-        
-        /// 加号两条线的宽度
-        public var lineWidth: CGFloat = 4
-        
-        /// 加号两条线的长度
-        public var lineLength: CGFloat = 25
-        
-        /// 文字标题
-        public var title: String? = "更多"
-        
-        /// 标题颜色
-        public var titleColor: UIColor = "#999999".color
-        
-        /// 标题暗黑模式下的颜色
-        public var titleDarkColor: UIColor = "#ffffff".color
-        
-        /// 标题字体
-        public var titleFont: UIFont = .mediumPingFang(ofSize: 14)
-        
-        public init() { }
-    }
-}
-
-extension PhotoListConfiguration {
-    
-    public struct AssetNumber {
-        public var textColor: UIColor = "#333333".color
-        public var textDarkColor: UIColor = "#ffffff".color
-        public var textFont: UIFont = .mediumPingFang(ofSize: 15)
-        public init() { }
     }
 }

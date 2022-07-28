@@ -11,44 +11,40 @@ import Photos
 import PhotosUI
 
 extension PhotoManager {
-    
-    func registerPhotoChangeObserver() {
-        let status = AssetManager.authorizationStatus()
-        if status == .notDetermined || status == .denied {
-            return
+    struct AssociatedKeys {
+        static var loadNetworkVideoMode: String = "loadNetworkVideoMode"
+    }
+    public var loadNetworkVideoMode: PhotoAsset.LoadNetworkVideoMode {
+        get {
+            objc_getAssociatedObject(
+                self,
+                &AssociatedKeys.loadNetworkVideoMode
+            ) as? PhotoAsset.LoadNetworkVideoMode ?? .download
         }
-        if isCacheCameraAlbum {
-            if didRegisterObserver {
-                return
-            }
-            PHPhotoLibrary.shared().register(self)
-            didRegisterObserver = true
-        }else {
-            if !didRegisterObserver {
-                return
-            }
-            PHPhotoLibrary.shared().unregisterChangeObserver(self)
-            cameraAlbumResult = nil
-            cameraAlbumResultOptions = nil
-            didRegisterObserver = false
+        set {
+            objc_setAssociatedObject(
+                self,
+                &AssociatedKeys.loadNetworkVideoMode,
+                newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
         }
     }
     
-    private var cameraAlbumLocalIdentifierSelectOptions: PickerAssetOptions? {
+    var cameraAlbumLocalIdentifierSelectOptions: PickerAssetOptions? {
         let identifierType = UserDefaults.standard.integer(
             forKey: PhotoManager.CameraAlbumLocal.identifierType.rawValue
         )
         return PickerAssetOptions(rawValue: identifierType)
     }
     
-    private var cameraAlbumLocalLanguage: String? {
+    var cameraAlbumLocalLanguage: String? {
         let language = UserDefaults.standard.string(
             forKey: PhotoManager.CameraAlbumLocal.language.rawValue
         )
         return language
     }
     
-    private var cameraAlbumLocalIdentifier: String? {
+    var cameraAlbumLocalIdentifier: String? {
         let identifier = UserDefaults.standard.string(
             forKey: PhotoManager.CameraAlbumLocal.identifier.rawValue
         )
@@ -62,23 +58,15 @@ extension PhotoManager {
     public func fetchAssetCollections(
         for options: PHFetchOptions,
         showEmptyCollection: Bool,
-        completion: (([PhotoAssetCollection]) -> Void)?
+        completion: @escaping ([PhotoAssetCollection]) -> Void
     ) {
         DispatchQueue.global().async {
             var assetCollectionsArray = [PhotoAssetCollection]()
             AssetManager.enumerateAllAlbums(
                 filterInvalid: true,
                 options: nil
-            ) { (collection, index, stop) in
-                if completion == nil {
-                    stop.pointee = true
-                    return
-                }
-                let assetCollection = PhotoAssetCollection(
-                    collection: collection,
-                    options: options
-                )
-                assetCollection.fetchResult()
+            ) { (collection) in
+                let assetCollection = PhotoAssetCollection.init(collection: collection, options: options)
                 if showEmptyCollection == false && assetCollection.count == 0 {
                     return
                 }
@@ -89,7 +77,7 @@ extension PhotoManager {
                 }
             }
             DispatchQueue.main.async {
-                completion?(assetCollectionsArray)
+                completion(assetCollectionsArray)
             }
         }
     }
@@ -101,24 +89,22 @@ extension PhotoManager {
     public func fetchAssetCollections(
         for options: PHFetchOptions,
         showEmptyCollection: Bool,
-        usingBlock: ((PhotoAssetCollection?, Bool, UnsafeMutablePointer<ObjCBool>) -> Void)?
+        usingBlock: @escaping (PhotoAssetCollection?, Bool) -> Void
     ) {
         AssetManager.enumerateAllAlbums(
             filterInvalid: true,
             options: nil
-        ) { (collection, index, stop) in
+        ) { (collection) in
             let assetCollection = PhotoAssetCollection(
                 collection: collection,
                 options: options
             )
-            assetCollection.fetchResult()
             if showEmptyCollection == false && assetCollection.count == 0 {
                 return
             }
-            usingBlock?(assetCollection, collection.isCameraRoll, stop)
+            usingBlock(assetCollection, collection.isCameraRoll)
         }
-        var result = ObjCBool(true)
-        usingBlock?(nil, false, &result)
+        usingBlock(nil, false)
     }
     
     /// 获取相机胶卷资源集合
@@ -130,25 +116,22 @@ extension PhotoManager {
         DispatchQueue.global().async {
             var useLocalIdentifier = false
             let language = Locale.preferredLanguages.first
-            if let localOptions = self.cameraAlbumLocalIdentifierSelectOptions,
-               let localLanguage = self.cameraAlbumLocalLanguage,
-               localLanguage == language,
-               self.cameraAlbumLocalIdentifier != nil {
-                if (localOptions.isPhoto && localOptions.isVideo) ||
-                    selectOptions == localOptions {
+            if self.cameraAlbumLocalIdentifier != nil {
+                let localOptions = self.cameraAlbumLocalIdentifierSelectOptions
+                if  ((localOptions?.isPhoto == true && localOptions?.isVideo == true) ||
+                        selectOptions == self.cameraAlbumLocalIdentifierSelectOptions) &&
+                    self.cameraAlbumLocalLanguage == language {
                     useLocalIdentifier = true
                 }
             }
-            var collection: PHAssetCollection?
-            if let localIdentifier = self.cameraAlbumLocalIdentifier,
-               useLocalIdentifier {
-                let identifiers: [String] = [localIdentifier]
+            let collection: PHAssetCollection?
+            if useLocalIdentifier == true {
+                let identifiers: [String] = [self.cameraAlbumLocalIdentifier!]
                 collection = PHAssetCollection.fetchAssetCollections(
                     withLocalIdentifiers: identifiers,
                     options: nil
                 ).firstObject
-            }
-            if collection == nil {
+            }else {
                 collection = AssetManager.fetchCameraRollAlbum(options: nil)
                 UserDefaults.standard.set(
                     collection?.localIdentifier,
@@ -158,41 +141,16 @@ extension PhotoManager {
                     selectOptions.rawValue,
                     forKey: PhotoManager.CameraAlbumLocal.identifierType.rawValue
                 )
-                UserDefaults.standard.set(
-                    language, forKey: PhotoManager.CameraAlbumLocal.language.rawValue
-                )
+                UserDefaults.standard.set(language, forKey: PhotoManager.CameraAlbumLocal.language.rawValue)
             }
             let assetCollection = PhotoAssetCollection(
                 collection: collection,
                 options: options
             )
-            if let fetchResult = self.cameraAlbumResult,
-               let options = self.cameraAlbumResultOptions,
-               (options == selectOptions || (options.isPhoto && options.isVideo)) {
-                assetCollection.changeResult(for: fetchResult)
-            }else {
-                assetCollection.fetchResult()
-                if self.isCacheCameraAlbum {
-                    self.cameraAlbumResult = assetCollection.result
-                    self.cameraAlbumResultOptions = selectOptions
-                }
-            }
             assetCollection.isCameraRoll = true
             DispatchQueue.main.async {
                 completion(assetCollection)
             }
         }
-    }
-}
-
-extension PhotoManager: PHPhotoLibraryChangeObserver {
-    public func photoLibraryDidChange(_ changeInstance: PHChange) {
-        guard let fetchResult = cameraAlbumResult,
-              let changeResult = changeInstance.changeDetails(for: fetchResult) else {
-            return
-        }
-        let result = changeResult.fetchResultAfterChanges
-        cameraAlbumResult = result
-        PhotoManager.shared.firstLoadAssets = true
     }
 }

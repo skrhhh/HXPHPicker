@@ -76,7 +76,7 @@ extension UIDevice {
         return 0
     }
     class var isPad: Bool {
-        current.userInterfaceIdiom == .pad
+        UI_USER_INTERFACE_IDIOM() == .pad
     }
     class var isAllIPhoneX: Bool {
         (isIPhoneX ||

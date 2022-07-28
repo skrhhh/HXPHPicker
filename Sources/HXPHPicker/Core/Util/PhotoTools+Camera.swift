@@ -5,7 +5,6 @@
 //  Created by Slience on 2021/9/1.
 //
 
-#if HXPICKER_ENABLE_PICKER || HXPICKER_ENABLE_CAMERA
 import UIKit
 import Accelerate
 import CoreGraphics
@@ -196,4 +195,3 @@ extension PhotoTools {
         return UIImage(cgImage: cgImage)
     }
 }
-#endif

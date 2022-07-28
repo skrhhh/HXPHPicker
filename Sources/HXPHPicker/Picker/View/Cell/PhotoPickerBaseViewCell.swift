@@ -25,21 +25,13 @@ open class PhotoPickerBaseViewCell: UICollectionViewCell {
     public weak var delegate: PhotoPickerViewCellDelegate?
     /// 配置
     public var config: PhotoListCellConfiguration? {
-        didSet {
-            photoView.targetWidth = config?.targetWidth ?? 250
-            #if canImport(Kingfisher)
-            photoView.kf_indicatorColor = config?.kf_indicatorColor
-            #endif
-            configColor()
-        }
+        didSet { configColor() }
     }
     /// 展示图片
     public lazy var photoView: PhotoThumbnailView = {
         let photoView = PhotoThumbnailView()
-        photoView.fadeImage = PhotoManager.shared.firstLoadAssets
         return photoView
     }()
-    
     /// 是否可以选择
     open var canSelect = true
     
@@ -58,17 +50,9 @@ open class PhotoPickerBaseViewCell: UICollectionViewCell {
         didSet {
             updateSelectedState(isSelected: photoAsset.isSelected, animated: false)
             photoView.photoAsset = photoAsset
-            if isRequestDirectly {
-                request()
-            }
+            requestThumbnailImage()
         }
     }
-    
-    open func request() {
-        requestThumbnailImage()
-        requestICloudState()
-    }
-    
     /// 初始化
     open func initView() {
         contentView.addSubview(photoView)
@@ -90,14 +74,7 @@ open class PhotoPickerBaseViewCell: UICollectionViewCell {
     
     /// 获取图片，重写此方法可以修改图片
     open func requestThumbnailImage(targetWidth: CGFloat) {
-        photoView.requestThumbnailImage(targetWidth: targetWidth) { [weak self] in
-            guard let self = self, self.photoAsset == $1 else { return }
-            self.requestThumbnailCompletion($0)
-        }
-    }
-    
-    open func requestThumbnailCompletion(_ image: UIImage?) {
-        
+        photoView.requestThumbnailImage(targetWidth: targetWidth)
     }
     
     /// 更新已选状态
@@ -109,72 +86,17 @@ open class PhotoPickerBaseViewCell: UICollectionViewCell {
     open func updateSelectedState(isSelected: Bool, animated: Bool) {
         selectedTitle = isSelected ? String(photoAsset.selectIndex + 1) : "0"
     }
-    
-    /// 是否在iCloud上，只有获取过iCloud状态之后才确定
-    open var inICloud: Bool = false
-    
-    /// 获取iCloud上的状态的请求id
-    public var iCloudRequestID: PHImageRequestID?
-    
-    /// 获取是否在iCloud
-    open func requestICloudState() {
-        guard let config = config,
-              config.showICloudMark else {
-            return
-        }
-        cancelICloudRequest()
-        if PhotoManager.shared.thumbnailLoadMode == .simplify {
-            return
-        }
-        iCloundLoading = true
-        iCloudRequestID = photoAsset.requestICloudState { [weak self] photoAsset, inICloud in
-            guard let self = self,
-                  self.photoAsset == photoAsset else {
-                return
-            }
-            self.iCloudRequestID = nil
-            self.requestICloudStateCompletion(inICloud)
-            self.iCloundLoading = false
-        }
-    }
-    
-    /// 获取iCloud上状态完成
-    open func requestICloudStateCompletion(_ inICloud: Bool) {
-        self.inICloud = inICloud
-        requestICloudCompletion = true
-    }
-    
     /// 布局，重写此方法修改布局
     open func layoutView() {
         photoView.frame = bounds
     }
-    
     /// 取消请求资源图片
     public func cancelRequest() {
         photoView.cancelRequest()
-        cancelICloudRequest()
     }
-    
-    open func cancelICloudRequest() {
-        if iCloundLoading {
-            iCloundLoading = false
-        }
-        if requestICloudCompletion {
-            requestICloudCompletion = false
-        }
-        if inICloud {
-            inICloud = false
-        }
-        if let id = iCloudRequestID {
-            PHImageManager.default().cancelImageRequest(id)
-            iCloudRequestID = nil
-        }
-    }
-    
     override init(frame: CGRect) {
         super.init(frame: frame)
         initView()
-//        addLoadModeObserver()
     }
     open override func layoutSubviews() {
         super.layoutSubviews()
@@ -188,60 +110,7 @@ open class PhotoPickerBaseViewCell: UICollectionViewCell {
             }
         }
     }
-    var isRequestDirectly = true
-    var iCloundLoading = false
-    var requestICloudCompletion = false
-    var observation: Any?
-    deinit {
-        cancelRequest()
-        if let observation = observation {
-            NotificationCenter.default.removeObserver(observation)
-            self.observation = nil
-        }
-    }
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-}
-
-extension PhotoPickerBaseViewCell {
-    func reload() {
-        self.photoView.reloadImage()
-        if !self.requestICloudCompletion && !self.iCloundLoading {
-            self.requestICloudState()
-        }
-    }
-    func cancelReload() {
-        self.photoView.cancelRequest()
-        if !self.requestICloudCompletion {
-            self.cancelICloudRequest()
-        }
-    }
-//    private func addLoadModeObserver() {
-//        observation = NotificationCenter
-//            .default
-//            .addObserver(
-//                forName: .ThumbnailLoadModeDidChange,
-//                object: nil,
-//                queue: .main
-//            ) { [weak self] notification in
-//                guard let self = self else { return }
-//                let mode = PhotoManager.shared.thumbnailLoadMode
-//                if mode == .simplify {
-//                    self.photoView.cancelRequest()
-//                    if !self.requestICloudCompletion {
-//                        self.cancelICloudRequest()
-//                    }
-//                    return
-//                }
-//                if let needReload = notification.userInfo?["needReload"] as? Bool,
-//                   !needReload {
-//                    return
-//                }
-//                self.photoView.reloadImage()
-//                if !self.requestICloudCompletion && !self.iCloundLoading {
-//                    self.requestICloudState()
-//                }
-//            }
-//    }
 }

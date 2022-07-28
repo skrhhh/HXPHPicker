@@ -55,40 +55,6 @@ public protocol PhotoEditorViewControllerDelegate: AnyObject {
     func photoEditorViewController(
         didCancel photoEditorViewController: PhotoEditorViewController
     )
-    
-    // MARK: 只支持 push/pop ，跳转之前需要 navigationController?.delegate = photoEditorVC
-    /// 转场过渡动画时展示的image
-    /// - Parameters:
-    ///   - photoEditorViewController: 对应的 PhotoEditorViewController
-    func photoEditorViewController(
-        transitionPreviewImage photoEditorViewController: PhotoEditorViewController
-    ) -> UIImage?
-    
-    /// 转场动画时长
-    func photoEditorViewController(
-        _ photoEditorViewController: PhotoEditorViewController,
-        transitionDuration mode: EditorTransitionMode
-    ) -> TimeInterval
-    
-    /// 跳转界面时起始的视图，用于获取位置大小。与 transitioBegenPreviewFrame 一样
-    func photoEditorViewController(
-        transitioBegenPreviewView photoEditorViewController: PhotoEditorViewController
-    ) -> UIView?
-    
-    /// 界面返回时对应的视图，用于获取位置大小。与 transitioEndPreviewFrame 一样
-    func photoEditorViewController(
-        transitioEndPreviewView photoEditorViewController: PhotoEditorViewController
-    ) -> UIView?
-    
-    /// 跳转界面时对应的起始位置大小
-    func photoEditorViewController(
-        transitioBegenPreviewFrame photoEditorViewController: PhotoEditorViewController
-    ) -> CGRect
-    
-    /// 界面返回时对应的位置大小
-    func photoEditorViewController(
-        transitioEndPreviewFrame photoEditorViewController: PhotoEditorViewController
-    ) -> CGRect
 }
 public extension PhotoEditorViewControllerDelegate {
     func photoEditorViewController(
@@ -145,46 +111,6 @@ public extension PhotoEditorViewControllerDelegate {
             }
         }
     }
-    
-    func photoEditorViewController(
-        transitionPreviewImage photoEditorViewController: PhotoEditorViewController
-    ) -> UIImage? {
-        nil
-    }
-    
-    func photoEditorViewController(
-        _ photoEditorViewController: PhotoEditorViewController,
-        transitionDuration mode: EditorTransitionMode
-    ) -> TimeInterval {
-        if photoEditorViewController.state == .cropping && mode == .push {
-            return 0.35
-        }
-        return 0.55
-    }
-    
-    func photoEditorViewController(
-        transitioBegenPreviewView photoEditorViewController: PhotoEditorViewController
-    ) -> UIView? {
-        nil
-    }
-    
-    func photoEditorViewController(
-        transitioEndPreviewView photoEditorViewController: PhotoEditorViewController
-    ) -> UIView? {
-        nil
-    }
-    
-    func photoEditorViewController(
-        transitioBegenPreviewFrame photoEditorViewController: PhotoEditorViewController
-    ) -> CGRect {
-        .zero
-    }
-    
-    func photoEditorViewController(
-        transitioEndPreviewFrame photoEditorViewController: PhotoEditorViewController
-    ) -> CGRect {
-        .zero
-    }
 }
 
 public protocol VideoEditorViewControllerDelegate: AnyObject {
@@ -233,7 +159,7 @@ public protocol VideoEditorViewControllerDelegate: AnyObject {
         shouldClickMusicTool videoEditorViewController: VideoEditorViewController
     ) -> Bool
     
-    /// 加载配乐信息，当music.infos为空时触发
+    /// 加载配乐信息，当musicConfig.infos为空时触发
     /// 返回 true 内部会显示加载状态，调用 completionHandler 后恢复
     /// - Parameters:
     ///   - videoEditorViewController: 对应的 VideoEditorViewController
@@ -270,39 +196,6 @@ public protocol VideoEditorViewControllerDelegate: AnyObject {
     func videoEditorViewController(
         didCancel videoEditorViewController: VideoEditorViewController
     )
-    
-    /// 转场过渡动画时展示的image
-    /// - Parameters:
-    ///   - videoEditorViewController: 对应的 VideoEditorViewController
-    func videoEditorViewController(
-        transitionPreviewImage videoEditorViewController: VideoEditorViewController
-    ) -> UIImage?
-    
-    /// 转场动画时长
-    func videoEditorViewController(
-        _ videoEditorViewController: VideoEditorViewController,
-        transitionDuration mode: EditorTransitionMode
-    ) -> TimeInterval
-    
-    /// 跳转界面时起始的视图，用于获取位置大小。与 presentPreviewImageAt 一样
-    func videoEditorViewController(
-        transitioBegenPreviewView videoEditorViewController: VideoEditorViewController
-    ) -> UIView?
-    
-    /// 界面返回时对应的视图，用于获取位置大小。与 presentPreviewFrameAt 一样
-    func videoEditorViewController(
-        transitioEndPreviewView videoEditorViewController: VideoEditorViewController
-    ) -> UIView?
-    
-    /// 跳转界面时对应的起始位置大小
-    func videoEditorViewController(
-        transitioBegenPreviewFrame videoEditorViewController: VideoEditorViewController
-    ) -> CGRect
-    
-    /// 界面返回时对应的位置大小
-    func videoEditorViewController(
-        transitioEndPreviewFrame videoEditorViewController: VideoEditorViewController
-    ) -> CGRect
 }
 
 public extension VideoEditorViewControllerDelegate {
@@ -371,46 +264,6 @@ public extension VideoEditorViewControllerDelegate {
         didCancel videoEditorViewController: VideoEditorViewController
     ) {
         back(videoEditorViewController)
-    }
-    
-    func videoEditorViewController(
-        transitionPreviewImage videoEditorViewController: VideoEditorViewController
-    ) -> UIImage? {
-        nil
-    }
-    
-    func videoEditorViewController(
-        _ videoEditorViewController: VideoEditorViewController,
-        transitionDuration mode: EditorTransitionMode
-    ) -> TimeInterval {
-        if videoEditorViewController.state == .cropTime && mode == .push {
-            return 0.35
-        }
-        return 0.55
-    }
-    
-    func videoEditorViewController(
-        transitioBegenPreviewView videoEditorViewController: VideoEditorViewController
-    ) -> UIView? {
-        nil
-    }
-    
-    func videoEditorViewController(
-        transitioEndPreviewView videoEditorViewController: VideoEditorViewController
-    ) -> UIView? {
-        nil
-    }
-    
-    func videoEditorViewController(
-        transitioBegenPreviewFrame videoEditorViewController: VideoEditorViewController
-    ) -> CGRect {
-        .zero
-    }
-    
-    func videoEditorViewController(
-        transitioEndPreviewFrame videoEditorViewController: VideoEditorViewController
-    ) -> CGRect {
-        .zero
     }
     
     private func back(

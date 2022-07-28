@@ -26,9 +26,9 @@ class EditorStickerTextController: UINavigationController {
 
 final class EditorStickerTextViewController: BaseViewController {
     weak var delegate: EditorStickerTextViewControllerDelegate?
-    private let config: EditorTextConfiguration
+    private let config: EditorTextConfig
     private let stickerItem: EditorStickerItem?
-    init(config: EditorTextConfiguration,
+    init(config: EditorTextConfig,
          stickerItem: EditorStickerItem? = nil) {
         self.config = config
         self.stickerItem = stickerItem

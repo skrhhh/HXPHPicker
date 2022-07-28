@@ -21,11 +21,7 @@ public struct PhotoEditResult {
     public let editedImage: UIImage
     
     /// 编辑后的图片本地地址
-    public var editedImageURL: URL {
-        urlConfig.url
-    }
-    
-    public let urlConfig: EditorURLConfig
+    public let editedImageURL: URL
     
     /// 图片类型
     public let imageType: ImageType
@@ -38,15 +34,14 @@ struct PhotoEditData: Codable {
     let isPortrait: Bool
     let cropData: PhotoEditCropData?
     let brushData: [PhotoEditorBrushData]
-    let hasFilter: Bool
-    let filterImageURL: URL?
+    let filter: PhotoEditorFilter?
+    let filterValue: Float
     let mosaicData: [PhotoEditorMosaicData]
     let stickerData: EditorStickerData?
 }
 
 struct PhotoEditCropData: Codable {
     let cropSize: CGSize
-    let isRoundCrop: Bool
     let zoomScale: CGFloat
     let contentInset: UIEdgeInsets
     let offsetScale: CGPoint
@@ -61,7 +56,7 @@ struct PhotoEditCropData: Codable {
 extension PhotoEditResult: Codable {
     enum CodingKeys: CodingKey {
         case editedImage
-        case urlConfig
+        case editedImageURL
         case imageType
         case editedData
     }
@@ -69,7 +64,7 @@ extension PhotoEditResult: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let imageData = try container.decode(Data.self, forKey: .editedImage)
         editedImage = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(imageData) as! UIImage
-        urlConfig = try container.decode(EditorURLConfig.self, forKey: .urlConfig)
+        editedImageURL = try container.decode(URL.self, forKey: .editedImageURL)
         imageType = try container.decode(ImageType.self, forKey: .imageType)
         editedData = try container.decode(PhotoEditData.self, forKey: .editedData)
     }
@@ -82,7 +77,7 @@ extension PhotoEditResult: Codable {
             let imageData = NSKeyedArchiver.archivedData(withRootObject: editedImage)
             try container.encode(imageData, forKey: .editedImage)
         }
-        try container.encode(urlConfig, forKey: .urlConfig)
+        try container.encode(editedImageURL, forKey: .editedImageURL)
         try container.encode(imageType, forKey: .imageType)
         try container.encode(editedData, forKey: .editedData)
     }

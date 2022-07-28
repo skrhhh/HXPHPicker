@@ -66,8 +66,7 @@ extension PhotoPickerViewController: UIImagePickerControllerDelegate, UINavigati
             }
         }
         imagePickerController.mediaTypes = mediaTypes
-        imagePickerController.modalPresentationStyle = .fullScreen
-        present(imagePickerController, animated: true)
+        present(imagePickerController, animated: true, completion: nil)
     }
     
     public func imagePickerController(
@@ -96,11 +95,9 @@ extension PhotoPickerViewController: UIImagePickerControllerDelegate, UINavigati
                 saveSystemAlbum(for: image, mediaType: .image)
                 return
             }
-            addedCameraPhotoAsset(
-                PhotoAsset(
-                    localImageAsset: .init(image: image)
-                )
-            )
+            addedCameraPhotoAsset(PhotoAsset(
+                localImageAsset: .init(image: image)
+            ))
             return
         }
         DispatchQueue.main.async {
@@ -148,47 +145,35 @@ extension PhotoPickerViewController: UIImagePickerControllerDelegate, UINavigati
             return
         }
         let avAsset = AVAsset.init(url: videoURL)
-        avAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
-            if avAsset.statusOfValue(forKey: "tracks", error: nil) != .loaded {
-                DispatchQueue.main.async {
-                    self.showExportFailed()
-                }
+        PhotoTools.exportEditVideo(
+            for: avAsset,
+            startTime: startTime,
+            endTime: endTime,
+            exportPreset: systemCamera.editExportPreset,
+            videoQuality: systemCamera.editVideoQuality
+        ) { (url, error) in
+            guard let url = url, error == nil else {
+                ProgressHUD.hide(forView: self.navigationController?.view, animated: false)
+                ProgressHUD.showWarning(
+                    addedTo: self.navigationController?.view,
+                    text: "视频导出失败".localized,
+                    animated: true,
+                    delayHide: 1.5
+                )
                 return
             }
-            PhotoTools.exportEditVideo(
-                for: avAsset,
-                startTime: startTime,
-                endTime: endTime,
-                exportPreset: systemCamera.editExportPreset,
-                videoQuality: systemCamera.editVideoQuality
-            ) { (url, error) in
-                guard let url = url, error == nil else {
-                    self.showExportFailed()
-                    return
-                }
-                if self.config.saveSystemAlbum {
-                    self.saveSystemAlbum(for: url, mediaType: .video)
-                    return
-                }
-                let phAsset: PhotoAsset = PhotoAsset.init(localVideoAsset: .init(videoURL: url))
-                self.addedCameraPhotoAsset(phAsset)
+            if self.config.saveSystemAlbum {
+                self.saveSystemAlbum(for: url, mediaType: .video)
+                return
             }
+            let phAsset: PhotoAsset = PhotoAsset.init(localVideoAsset: .init(videoURL: url))
+            self.addedCameraPhotoAsset(phAsset)
         }
-    }
-    func showExportFailed() {
-        ProgressHUD.hide(forView: navigationController?.view, animated: false)
-        ProgressHUD.showWarning(
-            addedTo: navigationController?.view,
-            text: "视频导出失败".localized,
-            animated: true,
-            delayHide: 1.5
-        )
     }
     func saveSystemAlbum(
         for asset: Any,
         mediaType: PHAssetMediaType,
         location: CLLocation? = nil,
-        isCapture: Bool = false,
         completion: (() -> Void)? = nil) {
         AssetManager.saveSystemAlbum(
             forAsset: asset,
@@ -197,11 +182,7 @@ extension PhotoPickerViewController: UIImagePickerControllerDelegate, UINavigati
             location: location
         ) { (phAsset) in
             if let phAsset = phAsset {
-                self.addedCameraPhotoAsset(
-                    PhotoAsset(asset: phAsset),
-                    isCapture: isCapture,
-                    completion: completion
-                )
+                self.addedCameraPhotoAsset(PhotoAsset(asset: phAsset), completion: completion)
             }else {
                 DispatchQueue.main.async {
                     ProgressHUD.hide(
@@ -221,17 +202,13 @@ extension PhotoPickerViewController: UIImagePickerControllerDelegate, UINavigati
     }
     func addedCameraPhotoAsset(
         _ photoAsset: PhotoAsset,
-        isCapture: Bool = false,
         completion: (() -> Void)? = nil
     ) {
         func addPhotoAsset(_ photoAsset: PhotoAsset) {
             guard let picker = pickerController else { return }
             ProgressHUD.hide(forView: navigationController?.view, animated: true)
             if config.takePictureCompletionToSelected {
-                if picker.addedPhotoAsset(
-                    photoAsset: photoAsset,
-                    filterEditor: true
-                ) {
+                if picker.addedPhotoAsset(photoAsset: photoAsset) {
                     updateCellSelectedTitle()
                 }
             }
@@ -246,7 +223,7 @@ extension PhotoPickerViewController: UIImagePickerControllerDelegate, UINavigati
             bottomView.updateFinishButtonTitle()
             setupEmptyView()
             if picker.config.selectMode == .single && config.finishSelectionAfterTakingPhoto {
-                quickSelect(photoAsset, isCapture: isCapture)
+                quickSelect(photoAsset)
             }
             completion?()
         }
@@ -267,7 +244,7 @@ extension PhotoPickerViewController: CameraControllerDelegate {
             cameraController.dismiss(animated: true)
             return
         }
-        var didDismiss: Bool
+        let didDismiss: Bool
         if picker.config.selectMode == .single &&
            config.finishSelectionAfterTakingPhoto {
             didDismiss = false
@@ -292,43 +269,29 @@ extension PhotoPickerViewController: CameraControllerDelegate {
             case .video(let videoURL):
                 asset = videoURL
                 mediaType = .video
-                let videoDuration = PhotoTools.getVideoDuration(videoURL: videoURL)
-                photoAsset = .init(localVideoAsset: .init(videoURL: videoURL, duration: videoDuration))
+                photoAsset = .init(localVideoAsset: .init(videoURL: videoURL))
             }
-            var canSelect = true
-            if !picker.canSelectAsset(
-                for: photoAsset,
-                showHUD: true,
-                filterEditor: true
-            ) {
+            var canSelect = false
+            if !picker.canSelectAsset(for: photoAsset, showHUD: true) {
                 if !didDismiss {
-                    DispatchQueue.main.async {
+                    DispatchQueue.main.sync {
                         cameraController.dismiss(animated: true)
                     }
-                    didDismiss = true
                 }
-                canSelect = false
-            }
-            if !didDismiss && !picker.autoDismiss {
-                DispatchQueue.main.async {
-                    cameraController.dismiss(animated: true)
-                }
-                didDismiss = true
+                canSelect = true
             }
             if self.config.saveSystemAlbum {
                 self.saveSystemAlbum(
                     for: asset,
                     mediaType: mediaType,
-                    location: location,
-                    isCapture: true
+                    location: location
                 ) { [weak self] in
                     self?.cameraControllerDismiss(canSelect)
                 }
                 return
             }
             self.addedCameraPhotoAsset(
-                photoAsset,
-                isCapture: true
+                photoAsset
             ) { [weak self] in
                 self?.cameraControllerDismiss(canSelect)
             }
@@ -336,13 +299,10 @@ extension PhotoPickerViewController: CameraControllerDelegate {
     }
     
     func cameraControllerDismiss(_ canSelect: Bool) {
-        guard let picker = pickerController,
+        if let picker = pickerController,
            picker.config.selectMode == .single,
            config.finishSelectionAfterTakingPhoto,
-           canSelect else {
-            return
-        }
-        if picker.autoDismiss {
+           canSelect {
             presentingViewController?.dismiss(animated: true)
         }
     }

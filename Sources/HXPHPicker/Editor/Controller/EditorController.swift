@@ -42,22 +42,17 @@ open class EditorController: UINavigationController {
         image: UIImage,
         editResult: PhotoEditResult? = nil,
         config: PhotoEditorConfiguration,
-        delegate: PhotoEditorViewControllerDelegate? = nil,
-        finished: PhotoEditorViewController.FinishHandler? = nil,
-        cancelled: PhotoEditorViewController.CancelHandler? = nil
+        delegate: PhotoEditorViewControllerDelegate? = nil
     ) {
         editorType = .photo
         self.config = config
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = config.modalPresentationStyle
         let photoEditorVC = PhotoEditorViewController(
             image: image,
             editResult: editResult,
             config: config
         )
         photoEditorVC.delegate = delegate
-        photoEditorVC.finishHandler = finished
-        photoEditorVC.cancelHandler = cancelled
         self.viewControllers = [photoEditorVC]
     }
     
@@ -70,14 +65,11 @@ open class EditorController: UINavigationController {
         imageData: Data,
         editResult: PhotoEditResult? = nil,
         config: PhotoEditorConfiguration,
-        delegate: PhotoEditorViewControllerDelegate? = nil,
-        finished: PhotoEditorViewController.FinishHandler? = nil,
-        cancelled: PhotoEditorViewController.CancelHandler? = nil
+        delegate: PhotoEditorViewControllerDelegate? = nil
     ) {
         editorType = .photo
         self.config = config
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = config.modalPresentationStyle
         let image: UIImage
         #if canImport(Kingfisher)
         image = DefaultImageProcessor.default.process(item: .data(imageData), options: .init([]))!
@@ -86,8 +78,6 @@ open class EditorController: UINavigationController {
         #endif
         let photoEditorVC = PhotoEditorViewController.init(image: image, editResult: editResult, config: config)
         photoEditorVC.delegate = delegate
-        photoEditorVC.finishHandler = finished
-        photoEditorVC.cancelHandler = cancelled
         self.viewControllers = [photoEditorVC]
     }
     
@@ -97,22 +87,17 @@ open class EditorController: UINavigationController {
         networkImageURL: URL,
         editResult: PhotoEditResult? = nil,
         config: PhotoEditorConfiguration,
-        delegate: PhotoEditorViewControllerDelegate? = nil,
-        finished: PhotoEditorViewController.FinishHandler? = nil,
-        cancelled: PhotoEditorViewController.CancelHandler? = nil
-    ) {
+        delegate: PhotoEditorViewControllerDelegate? = nil)
+    {
         editorType = .photo
         self.config = config
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = config.modalPresentationStyle
         let photoEditorVC = PhotoEditorViewController(
             networkImageURL: networkImageURL,
             editResult: editResult,
             config: config
         )
         photoEditorVC.delegate = delegate
-        photoEditorVC.finishHandler = finished
-        photoEditorVC.cancelHandler = cancelled
         self.viewControllers = [photoEditorVC]
     }
     #endif
@@ -126,17 +111,13 @@ open class EditorController: UINavigationController {
         videoURL: URL,
         editResult: VideoEditResult? = nil,
         config: VideoEditorConfiguration,
-        delegate: VideoEditorViewControllerDelegate? = nil,
-        finished: VideoEditorViewController.FinishHandler? = nil,
-        cancelled: VideoEditorViewController.CancelHandler? = nil
-    ) {
+        delegate: VideoEditorViewControllerDelegate? = nil)
+    {
         self.init(
             avAsset: AVAsset.init(url: videoURL),
             editResult: editResult,
             config: config,
-            delegate: delegate,
-            finished: finished,
-            cancelled: cancelled
+            delegate: delegate
         )
     }
     
@@ -149,22 +130,17 @@ open class EditorController: UINavigationController {
         avAsset: AVAsset,
         editResult: VideoEditResult? = nil,
         config: VideoEditorConfiguration,
-        delegate: VideoEditorViewControllerDelegate? = nil,
-        finished: VideoEditorViewController.FinishHandler? = nil,
-        cancelled: VideoEditorViewController.CancelHandler? = nil
+        delegate: VideoEditorViewControllerDelegate? = nil
     ) {
         editorType = .video
         self.config = config
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = config.modalPresentationStyle
         let videoEditorVC = VideoEditorViewController(
             avAsset: avAsset,
             editResult: editResult,
             config: config
         )
         videoEditorVC.delegate = delegate
-        videoEditorVC.finishHandler = finished
-        videoEditorVC.cancelHandler = cancelled
         self.viewControllers = [videoEditorVC]
     }
     
@@ -177,22 +153,17 @@ open class EditorController: UINavigationController {
         networkVideoURL: URL,
         editResult: VideoEditResult? = nil,
         config: VideoEditorConfiguration,
-        delegate: VideoEditorViewControllerDelegate? = nil,
-        finished: VideoEditorViewController.FinishHandler? = nil,
-        cancelled: VideoEditorViewController.CancelHandler? = nil
+        delegate: VideoEditorViewControllerDelegate? = nil
     ) {
         editorType = .video
         self.config = config
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = config.modalPresentationStyle
         let videoEditorVC = VideoEditorViewController(
             networkVideoURL: networkVideoURL,
             editResult: editResult,
             config: config
         )
         videoEditorVC.delegate = delegate
-        videoEditorVC.finishHandler = finished
-        videoEditorVC.cancelHandler = cancelled
         self.viewControllers = [videoEditorVC]
     }
     
@@ -206,22 +177,17 @@ open class EditorController: UINavigationController {
         photoAsset: PhotoAsset,
         editResult: VideoEditResult? = nil,
         config: VideoEditorConfiguration,
-        delegate: VideoEditorViewControllerDelegate? = nil,
-        finished: VideoEditorViewController.FinishHandler? = nil,
-        cancelled: VideoEditorViewController.CancelHandler? = nil
+        delegate: VideoEditorViewControllerDelegate? = nil
     ) {
         editorType = .video
         self.config = config
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = config.modalPresentationStyle
         let videoEditorVC = VideoEditorViewController(
             photoAsset: photoAsset,
             editResult: editResult,
             config: config
         )
         videoEditorVC.delegate = delegate
-        videoEditorVC.finishHandler = finished
-        videoEditorVC.cancelHandler = cancelled
         self.viewControllers = [videoEditorVC]
     }
     
@@ -234,22 +200,16 @@ open class EditorController: UINavigationController {
         photoAsset: PhotoAsset,
         editResult: PhotoEditResult? = nil,
         config: PhotoEditorConfiguration,
-        delegate: PhotoEditorViewControllerDelegate? = nil,
-        finished: PhotoEditorViewController.FinishHandler? = nil,
-        cancelled: PhotoEditorViewController.CancelHandler? = nil
+        delegate: PhotoEditorViewControllerDelegate? = nil
     ) {
         editorType = .photo
         self.config = config
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = config.modalPresentationStyle
         let photoEditorVC = PhotoEditorViewController(
             photoAsset: photoAsset,
-            editResult: editResult,
             config: config
         )
         photoEditorVC.delegate = delegate
-        photoEditorVC.finishHandler = finished
-        photoEditorVC.cancelHandler = cancelled
         self.viewControllers = [photoEditorVC]
     }
     #endif

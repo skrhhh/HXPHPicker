@@ -13,7 +13,7 @@ public class PickerConfiguration: BaseConfiguration {
     /// 资源可选项，控制获取系统相册资源的类型
     /// .livePhoto .gifPhoto 是photo的子项
     /// 默认只获取静态图片和视频
-    public var selectOptions: PickerAssetOptions = [.photo, .video]
+    public var selectOptions: PickerAssetOptions = [.video]
     
     /// 选择模式
     public var selectMode: PickerSelectMode = .multiple
@@ -66,7 +66,7 @@ public class PickerConfiguration: BaseConfiguration {
     #if HXPICKER_ENABLE_EDITOR
     /// 可编辑资源类型
     /// 视频允许编辑：当选择的视频时长超过限制将自动进入编辑界面
-    /// 显示编辑按钮的配置为：previewView.bottomView.editButtonHidden = false
+    /// 显示编辑按钮的配置为：previewView.bottomView.editButtonHidden
     public var editorOptions: PickerAssetOptions = [.photo, .video]
     
     /// 视频最大编辑时长，为0则不限制，超过限制不可编辑（视频时长超出最大选择时长才生效）
@@ -77,19 +77,7 @@ public class PickerConfiguration: BaseConfiguration {
     
     /// 照片编辑配置
     public lazy var photoEditor: PhotoEditorConfiguration = .init()
-    
-    /// 跳转编辑界面自定义转场动画
-    public var editorCustomTransition: Bool = true
     #endif
-    
-    /// 选择器展示样式，当 albumShowMode = .popup 并且全屏弹出时有效
-    public var pickerPresentStyle: PickerPresentStyle = .present
-    
-    /// 当 albumShowMode = .popup 并且全屏弹出时，是否允许右滑手势返回。与微信右滑手势返回一致
-    public var allowRightSwipeGestureBack: Bool = true
-    
-    /// 右滑返回手势触发范围，距离屏幕左边的距离
-    public var rightSwipeGestureTriggerRange: CGFloat = 50
     
     /// 状态栏样式
     public var statusBarStyle: UIStatusBarStyle = .default
@@ -109,8 +97,6 @@ public class PickerConfiguration: BaseConfiguration {
     /// 暗黑风格下导航栏样式
     public var navigationBarDarkStyle: UIBarStyle = .black
     
-    public var adaptiveBarAppearance: Bool = true
-    
     /// 导航栏标题颜色
     public var navigationTitleColor: UIColor = .black
     
@@ -121,7 +107,7 @@ public class PickerConfiguration: BaseConfiguration {
     public var navigationTintColor: UIColor?
     
     /// 暗黑风格下TintColor
-    public var navigationDarkTintColor: UIColor?
+    public var navigationDarkTintColor: UIColor = .white
     
     /// 相册列表配置
     public lazy var albumList: AlbumListConfiguration = .init()
@@ -134,12 +120,4 @@ public class PickerConfiguration: BaseConfiguration {
     
     /// 未授权提示界面相关配置
     public lazy var notAuthorized: NotAuthorizedConfiguration = .init()
-    
-    /// 是否缓存[相机胶卷/所有照片]相册
-    public var isCacheCameraAlbum: Bool = true
-    
-    public override init() {
-        super.init()
-        PhotoManager.shared.isCacheCameraAlbum = isCacheCameraAlbum
-    }
 }

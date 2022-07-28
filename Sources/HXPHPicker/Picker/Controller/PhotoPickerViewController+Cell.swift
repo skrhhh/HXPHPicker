@@ -23,7 +23,6 @@ extension PhotoPickerViewController: PhotoPickerViewCellDelegate {
             #if HXPICKER_ENABLE_EDITOR
             if photoAsset.videoEdit != nil {
                 photoAsset.videoEdit = nil
-                cell.isRequestDirectly = true
                 cell.photoAsset = photoAsset
             }else {
                 cell.updateSelectedState(
@@ -68,7 +67,7 @@ extension PhotoPickerViewController: PhotoPickerViewCellDelegate {
             }
             let inICloud = cell.photoAsset.checkICloundStatus(
                 allowSyncPhoto: picker.config.allowSyncICloudWhenSelectPhoto,
-                completion: { _, isSuccess in
+                completion: { isSuccess in
                 if isSuccess {
                     addAsset()
                 }

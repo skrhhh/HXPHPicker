@@ -30,15 +30,7 @@ extension PhotoEditorViewController {
         ProgressHUD.showLoading(addedTo: view, animated: true)
         DispatchQueue.global().async {
             if self.photoAsset.mediaType == .photo {
-                var image: UIImage
-                if let img = self.photoAsset.localImageAsset?.image {
-                    image = img
-                }else if let localLivePhoto = self.photoAsset.localLivePhoto,
-                   let img = UIImage(contentsOfFile: localLivePhoto.imageURL.path) {
-                    image = img
-                }else {
-                    image = UIImage()
-                }
+                var image = self.photoAsset.localImageAsset!.image!
                 image = self.fixImageOrientation(image)
                 if self.photoAsset.mediaSubType.isGif {
                     if let imageData = self.photoAsset.localImageAsset?.imageData {
@@ -51,7 +43,8 @@ extension PhotoEditorViewController {
                         }
                         #endif
                     }else if let imageURL = self.photoAsset.localImageAsset?.imageURL {
-                        if let imageData = try? Data(contentsOf: imageURL) {
+                        do {
+                            let imageData = try Data.init(contentsOf: imageURL)
                             #if canImport(Kingfisher)
                             if let gifImage = DefaultImageProcessor.default.process(
                                 item: .data(imageData),
@@ -60,7 +53,7 @@ extension PhotoEditorViewController {
                                 image = gifImage
                             }
                             #endif
-                        }
+                        }catch {}
                     }
                 }
                 self.filterHDImageHandler(image: image)
@@ -69,12 +62,7 @@ extension PhotoEditorViewController {
                     self.requestAssetCompletion(image: image)
                 }
             }else {
-                var image: UIImage
-                if let img = self.photoAsset.localVideoAsset?.image {
-                    image = img
-                }else {
-                    image = UIImage()
-                }
+                let image = self.fixImageOrientation(self.photoAsset.localVideoAsset!.image!)
                 self.filterHDImageHandler(image: image)
                 DispatchQueue.main.async {
                     ProgressHUD.hide(forView: self.view, animated: true)
@@ -87,11 +75,9 @@ extension PhotoEditorViewController {
         #if canImport(Kingfisher)
         let loadingView = ProgressHUD.showLoading(addedTo: view, animated: true)
         photoAsset.getNetworkImage(urlType: .original, filterEditor: true) { (receiveSize, totalSize) in
-            let progress = CGFloat(receiveSize) / CGFloat(totalSize)
+            let progress = Double(receiveSize) / Double(totalSize)
             if progress > 0 {
-                loadingView?.mode = .circleProgress
-                loadingView?.text = "图片下载中".localized
-                loadingView?.progress = progress
+                loadingView?.updateText(text: "图片下载中".localized + "(" + String(Int(progress * 100)) + "%)")
             }
         } resultHandler: { [weak self] (image) in
             guard let self = self else { return }
@@ -128,37 +114,16 @@ extension PhotoEditorViewController {
             guard let self = self else { return }
             switch result {
             case .success(let dataResult):
+                guard var image = UIImage(data: dataResult.imageData) else {
+                    ProgressHUD.hide(forView: self.view, animated: true)
+                    self.requestAssetFailure(isICloud: false)
+                    return
+                }
+                if dataResult.imageData.count > 3000000,
+                   let sImage = image.scaleSuitableSize() {
+                    image = sImage
+                }
                 DispatchQueue.global().async {
-                    var image: UIImage?
-                    let dataCount = CGFloat(dataResult.imageData.count)
-                    if dataCount > 3000000 {
-                        let compressionQuality: CGFloat
-                        if dataCount > 30000000 {
-                            compressionQuality = 30000000 / dataCount
-                        }else if dataCount > 15000000 {
-                            compressionQuality = 10000000 / dataCount
-                        }else if dataCount > 10000000 {
-                            compressionQuality = 6000000 / dataCount
-                        }else {
-                            compressionQuality = 3000000 / dataCount
-                        }
-                        if let imageData = PhotoTools.imageCompress(
-                            dataResult.imageData,
-                            compressionQuality: compressionQuality
-                        ) {
-                            image = .init(data: imageData)
-                        }
-                    }
-                    if image == nil {
-                        image = UIImage(data: dataResult.imageData)
-                    }
-                    guard var image = image else {
-                        DispatchQueue.main.async {
-                            ProgressHUD.hide(forView: self.view, animated: true)
-                            self.requestAssetFailure(isICloud: false)
-                        }
-                        return
-                    }
                     image = self.fixImageOrientation(image)
                     self.filterHDImageHandler(image: image)
                     DispatchQueue.main.async {
@@ -225,11 +190,9 @@ extension PhotoEditorViewController {
         let url = networkImageURL!
         let loadingView = ProgressHUD.showLoading(addedTo: view, animated: true)
         PhotoTools.downloadNetworkImage(with: url, options: [.backgroundDecode]) { (receiveSize, totalSize) in
-            let progress = CGFloat(receiveSize) / CGFloat(totalSize)
+            let progress = Double(receiveSize) / Double(totalSize)
             if progress > 0 {
-                loadingView?.mode = .circleProgress
-                loadingView?.text = "图片下载中".localized
-                loadingView?.progress = progress
+                loadingView?.updateText(text: "图片下载中".localized + "(" + String(Int(progress * 100)) + "%)")
             }
         } completionHandler: { [weak self] (image) in
             guard let self = self else { return }
@@ -257,14 +220,14 @@ extension PhotoEditorViewController {
                 brushColorView.canUndo = imageView.canUndoDraw
                 mosaicToolView.canUndo = imageView.canUndoMosaic
             }
-            imageInitializeCompletion = true
-            if transitionCompletion {
-                initializeStartCropping()
+            if state == .cropping {
+                imageView.startCropping(true)
+                croppingAction()
             }
+            imageInitializeCompletion = true
         }
         setFilterImage()
         setImage(image)
-        imageView.imageResizerView.imageView.originalImage = image
     }
     func requestAssetFailure(isICloud: Bool) {
         ProgressHUD.hide(forView: view, animated: true)
@@ -292,7 +255,7 @@ extension PhotoEditorViewController {
                 return
             }
             if editedData.mosaicData.isEmpty &&
-               !editedData.hasFilter {
+               editedData.filter == nil {
                 return
             }
         }
@@ -305,13 +268,13 @@ extension PhotoEditorViewController {
                 hasMosaic = true
             }
         }
-        if hasFilter || hasMosaic {
+        var value: Float = 0
+        if hasFilter {
             var minSize: CGFloat = min(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
-            if hasFilter {
-                DispatchQueue.main.sync {
-                    if !view.size.equalTo(.zero) {
-                        minSize = min(view.width, view.height) * 2
-                    }
+            DispatchQueue.main.sync {
+                value = filterView.sliderView.value
+                if !view.size.equalTo(.zero) {
+                    minSize = min(view.width, view.height) * 2
                 }
             }
             if image.width > minSize {
@@ -322,12 +285,13 @@ extension PhotoEditorViewController {
                 thumbnailImage = image
             }
         }
-        
-        if let result = editResult,
-           let filterURL = result.editedData.filterImageURL,
-           result.editedData.hasFilter,
-           hasFilter {
-            if let newImage = UIImage(contentsOfFile: filterURL.path) {
+        if let filter = editResult?.editedData.filter, hasFilter {
+            var newImage: UIImage?
+            if !config.filter.infos.isEmpty {
+                let info = config.filter.infos[filter.sourceIndex]
+                newImage = info.filterHandler(thumbnailImage, image, value, .touchUpInside)
+            }
+            if let newImage = newImage {
                 filterHDImage = newImage
                 if hasMosaic {
                     mosaicImage = newImage.mosaicImage(level: config.mosaic.mosaicWidth)

@@ -8,23 +8,12 @@
 import UIKit
 import AVKit
 
-public protocol PhotoPeekViewControllerDelegate: AnyObject {
-    func photoPeekViewController(requestSucceed photoPeekViewController: PhotoPeekViewController)
-    func photoPeekViewController(requestFailed photoPeekViewController: PhotoPeekViewController)
-}
-
-public extension PhotoPeekViewControllerDelegate {
-    func photoPeekViewController(requestSucceed photoPeekViewController: PhotoPeekViewController) { }
-    func photoPeekViewController(requestFailed photoPeekViewController: PhotoPeekViewController) { }
-}
-
 public class PhotoPeekViewController: UIViewController {
-    weak var delegate: PhotoPeekViewControllerDelegate?
+    
     lazy var contentView: PhotoPreviewContentView = {
         let type: PhotoPreviewContentView.`Type`
         if photoAsset.mediaType == .photo {
-            if photoAsset.mediaSubType == .livePhoto ||
-                photoAsset.mediaSubType == .localLivePhoto {
+            if photoAsset.mediaSubType == .livePhoto {
                 type = .livePhoto
             }else {
                 type = .photo
@@ -39,7 +28,6 @@ public class PhotoPeekViewController: UIViewController {
         }
         view.livePhotoPlayType = .auto
         view.videoPlayType = .auto
-        view.delegate = self
         if type == .video {
             view.videoView.delegate = self
         }
@@ -57,7 +45,7 @@ public class PhotoPeekViewController: UIViewController {
         return view
     }()
     
-    var photoAsset: PhotoAsset!
+    fileprivate var photoAsset: PhotoAsset!
     fileprivate var progress: CGFloat = 0
     fileprivate var isCamera = false
     
@@ -119,14 +107,7 @@ public class PhotoPeekViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 }
-extension PhotoPeekViewController: PhotoPreviewContentViewDelete {
-    public func contentView(requestSucceed contentView: PhotoPreviewContentView) {
-        delegate?.photoPeekViewController(requestSucceed: self)
-    }
-    public func contentView(requestFailed contentView: PhotoPreviewContentView) {
-        delegate?.photoPeekViewController(requestFailed: self)
-    }
-}
+
 extension PhotoPeekViewController: PhotoPreviewVideoViewDelegate {
     func videoView(resetPlay videoView: VideoPlayerView) {
         progress = 0

@@ -20,18 +20,6 @@ protocol PhotoPreviewViewControllerDelegate: AnyObject {
         isSelected: Bool,
         updateCell: Bool
     )
-    #if HXPICKER_ENABLE_EDITOR
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        shouldEditPhotoAsset photoAsset: PhotoAsset,
-        editorConfig: PhotoEditorConfiguration
-    ) -> Bool
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        shouldEditVideoAsset videoAsset: PhotoAsset,
-        editorConfig: VideoEditorConfiguration
-    ) -> Bool
-    #endif
     func previewViewController(
         _ previewController: PhotoPreviewViewController,
         editAssetFinished photoAsset: PhotoAsset
@@ -42,14 +30,6 @@ protocol PhotoPreviewViewControllerDelegate: AnyObject {
     )
     func previewViewController(
         didFinishButton previewController: PhotoPreviewViewController
-    )
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        requestSucceed photoAsset: PhotoAsset
-    )
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        requestFailed photoAsset: PhotoAsset
     )
 }
 extension PhotoPreviewViewControllerDelegate {
@@ -63,18 +43,6 @@ extension PhotoPreviewViewControllerDelegate {
         isSelected: Bool,
         updateCell: Bool
     ) { }
-    #if HXPICKER_ENABLE_EDITOR
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        shouldEditPhotoAsset photoAsset: PhotoAsset,
-        editorConfig: PhotoEditorConfiguration
-    ) -> Bool { true }
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        shouldEditVideoAsset videoAsset: PhotoAsset,
-        editorConfig: VideoEditorConfiguration
-    ) -> Bool { true }
-    #endif
     func previewViewController(
         _ previewController: PhotoPreviewViewController,
         editAssetFinished photoAsset: PhotoAsset
@@ -85,14 +53,6 @@ extension PhotoPreviewViewControllerDelegate {
     ) { }
     func previewViewController(
         didFinishButton previewController: PhotoPreviewViewController
-    ) { }
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        requestSucceed photoAsset: PhotoAsset
-    ) { }
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        requestFailed photoAsset: PhotoAsset
     ) { }
 }
 
@@ -114,7 +74,6 @@ public class PhotoPreviewViewController: BaseViewController {
     var viewDidAppear: Bool = false
     var firstLayoutSubviews: Bool = true
     var interactiveTransition: PickerInteractiveTransition?
-    weak var beforeNavDelegate: UINavigationControllerDelegate?
     lazy var selectBoxControl: SelectBoxView = {
         let boxControl = SelectBoxView(
             frame: CGRect(
@@ -179,7 +138,8 @@ public class PhotoPreviewViewController: BaseViewController {
             config: config.bottomView,
             allowLoadPhotoLibrary: allowLoadPhotoLibrary,
             isMultipleSelect: isMultipleSelect,
-            sourceType: isExternalPreview ? .browser : .preview
+            isPreview: true,
+            isExternalPreview: isExternalPreview
         )
         bottomView.hx_delegate = self
         if config.bottomView.showSelectedView && (isMultipleSelect || isExternalPreview) {
@@ -246,21 +206,15 @@ public class PhotoPreviewViewController: BaseViewController {
         view.clipsToBounds = true
         initView()
     }
-    public override func deviceOrientationWillChanged(notify: Notification) {
+    public override func deviceOrientationDidChanged(notify: Notification) {
         orientationDidChange = true
-        if let cell = getCell(for: currentPreviewIndex) {
-            if cell.photoAsset.mediaSubType == .livePhoto ||
-                cell.photoAsset.mediaSubType == .localLivePhoto {
-                if #available(iOS 9.1, *) {
-                    cell.scrollContentView.livePhotoView.stopPlayback()
-                }
+        let cell = getCell(for: currentPreviewIndex)
+        if cell?.photoAsset.mediaSubType == .livePhoto {
+            if #available(iOS 9.1, *) {
+                cell?.scrollContentView.livePhotoView.stopPlayback()
             }
         }
-    }
-    public override func deviceOrientationDidChanged(notify: Notification) {
-        if config.bottomView.showSelectedView &&
-            (isMultipleSelect || isExternalPreview) &&
-            config.showBottomView {
+        if config.bottomView.showSelectedView && (isMultipleSelect || isExternalPreview) && config.showBottomView {
             bottomView.selectedView.reloadSectionInset()
         }
     }
@@ -273,18 +227,8 @@ public class PhotoPreviewViewController: BaseViewController {
         super.viewDidAppear(animated)
         viewDidAppear = true
         DispatchQueue.main.async {
-            if let cell = self.getCell(for: self.currentPreviewIndex) {
-                cell.requestPreviewAsset()
-            }else {
-                Timer.scheduledTimer(
-                    withTimeInterval: 0.2,
-                    repeats: false
-                ) { [weak self] _ in
-                    guard let self = self else { return }
-                    let cell = self.getCell(for: self.currentPreviewIndex)
-                    cell?.requestPreviewAsset()
-                }
-            }
+            let cell = self.getCell(for: self.currentPreviewIndex)
+            cell?.requestPreviewAsset()
         }
         pickerController?.viewControllersDidAppear(self)
         guard let picker = pickerController else {
@@ -326,6 +270,9 @@ public class PhotoPreviewViewController: BaseViewController {
                 configColor()
             }
         }
+    }
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
@@ -505,19 +452,15 @@ extension PhotoPreviewViewController {
         ) as? PhotoPreviewViewCell
         return cell
     }
-    func getCell(for photoAsset: PhotoAsset) -> PhotoPreviewViewCell? {
-        guard let item = previewAssets.firstIndex(of: photoAsset) else {
-            return nil
-        }
-        return getCell(for: item)
-    }
     func setCurrentCellImage(image: UIImage?) {
         guard let image = image,
-              let cell = getCell(for: currentPreviewIndex),
-              !cell.scrollContentView.requestCompletion else {
+              let cell = getCell(for: currentPreviewIndex) else {
             return
         }
-        cell.scrollContentView.imageView.image = image
+        if !cell.photoAsset.mediaSubType.isGif {
+            cell.cancelRequest()
+            cell.scrollContentView.imageView.image = image
+        }
     }
     func deleteCurrentPhotoAsset() {
         if previewAssets.isEmpty || !isExternalPreview {

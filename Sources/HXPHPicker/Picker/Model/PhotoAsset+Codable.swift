@@ -8,11 +8,10 @@
 import UIKit
 
 extension PhotoAsset {
-    private struct Simplify: Codable {
+    struct Simplify: Codable {
         let phLocalIdentifier: String?
         let localImageAsset: LocalImageAsset?
         let localVideoAsset: LocalVideoAsset?
-        let localLivePhoto: LocalLivePhotoAsset?
         let networkVideoAsset: NetworkVideoAsset?
         
         #if canImport(Kingfisher)
@@ -35,7 +34,6 @@ extension PhotoAsset {
                 phLocalIdentifier: phAsset?.localIdentifier,
                 localImageAsset: localImageAsset,
                 localVideoAsset: localVideoAsset,
-                localLivePhoto: localLivePhoto,
                 networkVideoAsset: networkVideoAsset,
                 networkImageAsset: networkImageAsset,
                 photoEdit: photoEdit,
@@ -46,7 +44,6 @@ extension PhotoAsset {
                 phLocalIdentifier: phAsset?.localIdentifier,
                 localImageAsset: localImageAsset,
                 localVideoAsset: localVideoAsset,
-                localLivePhoto: localLivePhoto,
                 networkVideoAsset: networkVideoAsset,
                 photoEdit: photoEdit,
                 videoEdit: videoEdit
@@ -58,7 +55,6 @@ extension PhotoAsset {
                 phLocalIdentifier: phAsset?.localIdentifier,
                 localImageAsset: localImageAsset,
                 localVideoAsset: localVideoAsset,
-                localLivePhoto: localLivePhoto,
                 networkVideoAsset: networkVideoAsset,
                 networkImageAsset: networkImageAsset
             )
@@ -67,7 +63,6 @@ extension PhotoAsset {
                 phLocalIdentifier: phAsset?.localIdentifier,
                 localImageAsset: localImageAsset,
                 localVideoAsset: localVideoAsset,
-                localLivePhoto: localLivePhoto,
                 networkVideoAsset: networkVideoAsset
             )
             #endif
@@ -93,8 +88,6 @@ extension PhotoAsset {
                 photoAsset = PhotoAsset(localImageAsset: localImageAsset)
             }else if let localVideoAsset = simplify.localVideoAsset {
                 photoAsset = PhotoAsset(localVideoAsset: localVideoAsset)
-            }else if let localLivePhoto = simplify.localLivePhoto {
-                photoAsset = PhotoAsset(localLivePhoto: localLivePhoto)
             }else if let networkVideoAsset = simplify.networkVideoAsset {
                 photoAsset = PhotoAsset(networkVideoAsset: networkVideoAsset)
             }else {
@@ -105,14 +98,8 @@ extension PhotoAsset {
                 #endif
             }
             #if HXPICKER_ENABLE_EDITOR
-            if let ImageURL = simplify.photoEdit?.editedImageURL,
-               FileManager.default.fileExists(atPath: ImageURL.path) {
-                photoAsset?.photoEdit = simplify.photoEdit
-            }
-            if let videoURL = simplify.videoEdit?.editedURL,
-               FileManager.default.fileExists(atPath: videoURL.path) {
-                photoAsset?.videoEdit = simplify.videoEdit
-            }
+            photoAsset?.photoEdit = simplify.photoEdit
+            photoAsset?.videoEdit = simplify.videoEdit
             #endif
         } catch  {
             print(error)

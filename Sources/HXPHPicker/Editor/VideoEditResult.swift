@@ -11,11 +11,7 @@ import AVFoundation
 public struct VideoEditResult {
     
     /// 编辑后的视频地址
-    public var editedURL: URL {
-        urlConfig.url
-    }
-    
-    public let urlConfig: EditorURLConfig
+    public let editedURL: URL
     
     /// 编辑后的视频封面
     public let coverImage: UIImage?
@@ -29,9 +25,6 @@ public struct VideoEditResult {
     /// 视频时长 秒
     public let videoDuration: TimeInterval
     
-    /// 是否有原视频音乐
-    public let hasOriginalSound: Bool
-    
     /// 原视频音量
     public let videoSoundVolume: Float
     
@@ -41,33 +34,31 @@ public struct VideoEditResult {
     /// 背景音乐音量
     public let backgroundMusicVolume: Float
     
-    /// 时长裁剪数据
+    /// 裁剪数据
     public let cropData: VideoCropData?
     
-    /// 尺寸裁剪状态数据
-    let sizeData: VideoEditedCropSize?
+    /// 贴纸数据
+    let stickerData: EditorStickerData?
     
     init(
-        urlConfig: EditorURLConfig,
+        editedURL: URL,
         cropData: VideoCropData?,
-        hasOriginalSound: Bool,
         videoSoundVolume: Float,
         backgroundMusicURL: URL?,
         backgroundMusicVolume: Float,
-        sizeData: VideoEditedCropSize?
+        stickerData: EditorStickerData?
     ) {
-        self.urlConfig = urlConfig
-        editedFileSize = urlConfig.url.fileSize
+        editedFileSize = editedURL.fileSize
         
-        videoDuration = PhotoTools.getVideoDuration(videoURL: urlConfig.url)
+        videoDuration = PhotoTools.getVideoDuration(videoURL: editedURL)
         videoTime = PhotoTools.transformVideoDurationToString(duration: videoDuration)
-        coverImage = PhotoTools.getVideoThumbnailImage(videoURL: urlConfig.url, atTime: 0.1)
+        coverImage = PhotoTools.getVideoThumbnailImage(videoURL: editedURL, atTime: 0.1)
+        self.editedURL = editedURL
         self.cropData = cropData
-        self.hasOriginalSound = hasOriginalSound
         self.videoSoundVolume = videoSoundVolume
         self.backgroundMusicURL = backgroundMusicURL
         self.backgroundMusicVolume = backgroundMusicVolume
-        self.sizeData = sizeData
+        self.stickerData = stickerData
     }
 }
 
@@ -114,32 +105,23 @@ public struct VideoCropData: Codable {
     }
 }
 
-struct VideoEditedCropSize: Codable {
-    let isPortrait: Bool
-    let cropData: PhotoEditCropData?
-    let brushData: [PhotoEditorBrushData]
-    let stickerData: EditorStickerData?
-    let filter: VideoEditorFilter?
-}
-
 extension VideoEditResult: Codable {
     
     enum CodingKeys: String, CodingKey {
-        case urlConfig
+        case editedURL
         case coverImage
         case editedFileSize
         case videoTime
         case videoDuration
-        case hasOriginalSound
         case videoSoundVolume
         case backgroundMusicURL
         case backgroundMusicVolume
         case cropData
-        case sizeData
+        case stickerData
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        urlConfig = try container.decode(EditorURLConfig.self, forKey: .urlConfig)
+        editedURL = try container.decode(URL.self, forKey: .editedURL)
         if let coverImageData = try container.decodeIfPresent(Data.self, forKey: .coverImage) {
             coverImage = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(coverImageData) as? UIImage
         }else {
@@ -148,26 +130,24 @@ extension VideoEditResult: Codable {
         editedFileSize = try container.decode(Int.self, forKey: .editedFileSize)
         videoTime = try container.decode(String.self, forKey: .videoTime)
         videoDuration = try container.decode(TimeInterval.self, forKey: .videoDuration)
-        hasOriginalSound = try container.decode(Bool.self, forKey: .hasOriginalSound)
         videoSoundVolume = try container.decode(Float.self, forKey: .videoSoundVolume)
         backgroundMusicURL = try container.decodeIfPresent(URL.self, forKey: .backgroundMusicURL)
         backgroundMusicVolume = try container.decode(Float.self, forKey: .backgroundMusicVolume)
         cropData = try container.decodeIfPresent(VideoCropData.self, forKey: .cropData)
-        sizeData = try container.decodeIfPresent(VideoEditedCropSize.self, forKey: .sizeData)
+        stickerData = try container.decodeIfPresent(EditorStickerData.self, forKey: .stickerData)
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(urlConfig, forKey: .urlConfig)
+        try container.encode(editedURL, forKey: .editedURL)
         try container.encode(editedFileSize, forKey: .editedFileSize)
         try container.encode(videoTime, forKey: .videoTime)
         try container.encode(videoDuration, forKey: .videoDuration)
-        try container.encode(hasOriginalSound, forKey: .hasOriginalSound)
         try container.encode(videoSoundVolume, forKey: .videoSoundVolume)
         try container.encode(backgroundMusicURL, forKey: .backgroundMusicURL)
         try container.encode(backgroundMusicVolume, forKey: .backgroundMusicVolume)
         try container.encodeIfPresent(cropData, forKey: .cropData)
-        try container.encodeIfPresent(sizeData, forKey: .sizeData)
+        try container.encodeIfPresent(stickerData, forKey: .stickerData)
         
         if let image = coverImage {
             if #available(iOS 11.0, *) {

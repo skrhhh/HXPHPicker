@@ -39,8 +39,7 @@ public class PickerManager: NSObject {
         if config.selectMode == .multiple &&
             !config.allowSelectedTogether &&
             config.maximumSelectedVideoCount == 1 &&
-            config.selectOptions.isPhoto && config.selectOptions.isVideo &&
-            config.photoList.cell.singleVideoHideSelect {
+            config.selectOptions.isPhoto && config.selectOptions.isVideo {
             return true
         }
         return false
@@ -55,12 +54,13 @@ public class PickerManager: NSObject {
         requestAssetBytesQueue.maxConcurrentOperationCount = 1
         return requestAssetBytesQueue
     }()
+    fileprivate var bytesOperationName: String?
     fileprivate lazy var fetchAssetQueue: OperationQueue = {
         let fetchAssetQueue = OperationQueue.init()
         fetchAssetQueue.maxConcurrentOperationCount = 1
         return fetchAssetQueue
     }()
-    var requestAdjustmentStatusIds: [[PHContentEditingInputRequestID: PHAsset]] = []
+    fileprivate var fetchAssetOperationName: String?
     
     var fetchAssetsCompletion: (([PhotoAsset], PhotoAsset?) -> Void)?
     var reloadAssetCollection: (() -> Void)?
@@ -70,40 +70,8 @@ public class PickerManager: NSObject {
     var didDeselectAsset: ((PhotoAsset, Int) -> Void)?
     
     deinit {
-        cancelFetchAssetQueue()
-        cancelRequestAssetFileSize()
 //        print("deinit\(self)")
         PHPhotoLibrary.shared().unregisterChangeObserver(self)
-    }
-}
-
-public extension PickerManager {
-    
-    /// 获取相册集合
-    /// - Parameters:
-    ///   - options: 获取 PHFetchResult 中的 PHAsset 时的选项
-    ///   - showEmptyCollection: 是否显示空集合
-    /// - Returns: 相册集合
-    func fetchAssetCollections(
-        for options: PHFetchOptions,
-        showEmptyCollection: Bool = false
-    ) -> [PhotoAssetCollection] {
-        var assetCollectionsArray: [PhotoAssetCollection] = []
-        PhotoManager.shared.fetchAssetCollections(
-            for: options,
-            showEmptyCollection: showEmptyCollection
-        ) { (assetCollection, isCameraRoll, stop) in
-            guard let assetCollection = assetCollection else {
-                stop.pointee = true
-                return
-            }
-            if isCameraRoll {
-                assetCollectionsArray.insert(assetCollection, at: 0)
-            }else {
-                assetCollectionsArray.append(assetCollection)
-            }
-        }
-        return assetCollectionsArray
     }
 }
 
@@ -116,17 +84,12 @@ extension PickerManager {
             canAddAsset = true
             return
         }
-        
-        let array = selectedAssetArray
-        for photoAsset in array {
+        for photoAsset in selectedAssetArray {
             if photoAsset.mediaType == .photo {
                 selectedPhotoAssetArray.append(photoAsset)
             }else if photoAsset.mediaType == .video {
                 if singleVideo {
-                    if let index = selectedAssetArray.firstIndex(of: photoAsset) {
-                        canAddAsset = false
-                        selectedAssetArray.remove(at: index)
-                    }
+                    selectedAssetArray.remove(at: selectedAssetArray.firstIndex(of: photoAsset)!)
                 }else {
                     selectedVideoAssetArray.append(photoAsset)
                 }
@@ -150,12 +113,12 @@ extension PickerManager {
     }
     
     func fetchAssets(
-        completion: (([PhotoAsset], PhotoAsset?) -> Void)?
+        completion: @escaping ([PhotoAsset], PhotoAsset?) -> Void
     ) {
         fetchAssetsCompletion = completion
         fetchCameraAssetCollection { [weak self] assetCollection in
             guard let self = self else {
-                completion?([], nil)
+                completion([], nil)
                 return
             }
             self.fetchPhotoAssets(
@@ -165,9 +128,7 @@ extension PickerManager {
     }
     
     /// 获取相机胶卷资源集合
-    func fetchCameraAssetCollection(
-        completion: ((PhotoAssetCollection) -> Void)?
-    ) {
+    func fetchCameraAssetCollection(completion: @escaping (PhotoAssetCollection) -> Void) {
         if !config.allowLoadPhotoLibrary {
             let collection: PhotoAssetCollection
             if let assetCollection = cameraAssetCollection {
@@ -179,7 +140,7 @@ extension PickerManager {
                 )
                 cameraAssetCollection = collection
             }
-            completion?(collection)
+            completion(collection)
             return
         }
         if config.creationDate {
@@ -192,15 +153,17 @@ extension PickerManager {
             options: options
         ) { [weak self] (assetCollection) in
             guard let self = self else { return }
-            var collection = assetCollection
-            if collection.count == 0 {
-                collection = PhotoAssetCollection(
+            if assetCollection.count == 0 {
+                self.cameraAssetCollection = PhotoAssetCollection(
                     albumName: self.config.albumList.emptyAlbumName.localized,
                     coverImage: self.config.albumList.emptyCoverImageName.image
                 )
+            }else {
+                // 获取封面
+                self.cameraAssetCollection = assetCollection
+                self.cameraAssetCollection?.fetchCoverAsset()
             }
-            self.cameraAssetCollection = collection
-            completion?(collection)
+            completion(self.cameraAssetCollection!)
         }
     }
     
@@ -212,38 +175,71 @@ extension PickerManager {
         assetCollection: PhotoAssetCollection?
     ) {
         cancelFetchAssetQueue()
-        let operation = BlockOperation()
-        operation.addExecutionBlock { [unowned operation] in
+        let operation = BlockOperation {
             for photoAsset in self.localAssetArray {
                 photoAsset.isSelected = false
             }
             for photoAsset in self.localCameraAssetArray {
                 photoAsset.isSelected = false
             }
-            let result = self.getSelectAsset()
-            let selectedAssets = result.0
-            let selectedPhotoAssets = result.1
+            var selectedAssets = [PHAsset]()
+            var selectedPhotoAssets: [PhotoAsset] = []
             var localAssets: [PhotoAsset] = []
-            if operation.isCancelled {
-                return
+            var localIndex = -1
+            for (index, photoAsset) in self.selectedAssetArray.enumerated() {
+                if self.config.selectMode == .single {
+                    break
+                }
+                photoAsset.selectIndex = index
+                photoAsset.isSelected = true
+                if let phAsset = photoAsset.phAsset {
+                    selectedAssets.append(phAsset)
+                    selectedPhotoAssets.append(photoAsset)
+                }else {
+                    let inLocal = self
+                        .localAssetArray
+                        .contains { (localAsset) -> Bool in
+                        if localAsset.isEqual(photoAsset) {
+                            self.localAssetArray[self.localAssetArray.firstIndex(of: localAsset)!] = photoAsset
+                            return true
+                        }
+                        return false
+                    }
+                    let inLocalCamera = self
+                        .localCameraAssetArray
+                        .contains(where: { (localAsset) -> Bool in
+                        if localAsset.isEqual(photoAsset) {
+                            self.localCameraAssetArray[
+                                self.localCameraAssetArray.firstIndex(of: localAsset)!
+                            ] = photoAsset
+                            return true
+                        }
+                        return false
+                    })
+                    if !inLocal && !inLocalCamera {
+                        if photoAsset.localIndex > localIndex {
+                            localIndex = photoAsset.localIndex
+                            self.localAssetArray.insert(photoAsset, at: 0)
+                        }else {
+                            if localIndex == -1 {
+                                localIndex = photoAsset.localIndex
+                                self.localAssetArray.insert(photoAsset, at: 0)
+                            }else {
+                                self.localAssetArray.insert(photoAsset, at: 1)
+                            }
+                        }
+                    }
+                }
             }
             localAssets.append(contentsOf: self.localCameraAssetArray.reversed())
             localAssets.append(contentsOf: self.localAssetArray)
             var photoAssets = [PhotoAsset]()
             photoAssets.reserveCapacity(assetCollection?.count ?? 10)
             var lastAsset: PhotoAsset?
-            assetCollection?
-                .enumerateAssets(
-                    options: self.fetchLimit > 0 ? .reverse : .concurrent,
-                    usingBlock: { [weak self] (photoAsset, index, stop) in
-                guard let self = self else {
-                    stop.pointee = true
-                    return
-                }
-                if operation.isCancelled {
-                    stop.pointee = true
-                    return
-                }
+            assetCollection?.enumerateAssets(
+                options: self.fetchLimit > 0 ? .reverse : .concurrent,
+                usingBlock: { [weak self] (photoAsset, index, stop) in
+                guard let self = self else { return }
                 if self.selectOptions.contains(.gifPhoto) {
                     if photoAsset.phAsset!.isImageAnimated {
                         photoAsset.mediaSubType = .imageAnimated
@@ -272,7 +268,11 @@ extension PickerManager {
                     asset = phAsset
                     lastAsset = phAsset
                 }
-                photoAssets.append(asset)
+//                if self.config.photoList.sort == .desc {
+//                    photoAssets.insert(asset, at: 0)
+//                }else {
+                    photoAssets.append(asset)
+//                }
                 if self.fetchLimit > 0 && photoAssets.count > self.fetchLimit {
                     stop.pointee = true
                 }
@@ -285,67 +285,23 @@ extension PickerManager {
             }else {
                 photoAssets.append(contentsOf: localAssets.reversed())
             }
-            if operation.isCancelled {
-                return
+            if let operation =
+                self.fetchAssetQueue.operations.first {
+                if operation.isCancelled || operation.name != self.fetchAssetOperationName {
+                    return
+                }
             }
             DispatchQueue.main.async {
                 self.fetchAssetsCompletion?(photoAssets, lastAsset)
             }
         }
+        fetchAssetOperationName = UUID().uuidString
+        operation.name = fetchAssetOperationName
         fetchAssetQueue.addOperation(operation)
     }
     private func cancelFetchAssetQueue() {
+        fetchAssetOperationName = nil
         fetchAssetQueue.cancelAllOperations()
-    }
-    private func getSelectAsset() -> ([PHAsset], [PhotoAsset]) {
-        var selectedAssets = [PHAsset]()
-        var selectedPhotoAssets: [PhotoAsset] = []
-        var localIndex = -1
-        for (index, photoAsset) in selectedAssetArray.enumerated() {
-            if config.selectMode == .single {
-                break
-            }
-            photoAsset.selectIndex = index
-            photoAsset.isSelected = true
-            if let phAsset = photoAsset.phAsset {
-                selectedAssets.append(phAsset)
-                selectedPhotoAssets.append(photoAsset)
-            }else {
-                let inLocal = self
-                    .localAssetArray
-                    .contains { (localAsset) -> Bool in
-                    if localAsset.isEqual(photoAsset) {
-                        localAssetArray[localAssetArray.firstIndex(of: localAsset)!] = photoAsset
-                        return true
-                    }
-                    return false
-                }
-                let inLocalCamera = localCameraAssetArray
-                    .contains(where: { (localAsset) -> Bool in
-                    if localAsset.isEqual(photoAsset) {
-                        localCameraAssetArray[
-                            localCameraAssetArray.firstIndex(of: localAsset)!
-                        ] = photoAsset
-                        return true
-                    }
-                    return false
-                })
-                if !inLocal && !inLocalCamera {
-                    if photoAsset.localIndex > localIndex {
-                        localIndex = photoAsset.localIndex
-                        self.localAssetArray.insert(photoAsset, at: 0)
-                    }else {
-                        if localIndex == -1 {
-                            localIndex = photoAsset.localIndex
-                            localAssetArray.insert(photoAsset, at: 0)
-                        }else {
-                            localAssetArray.insert(photoAsset, at: 1)
-                        }
-                    }
-                }
-            }
-        }
-        return (selectedAssets, selectedPhotoAssets)
     }
 }
 
@@ -362,13 +318,17 @@ public extension PickerManager {
             completion(0, "")
             return
         }
-        let operation = BlockOperation()
-        operation.addExecutionBlock { [unowned operation] in
+        let operation = BlockOperation.init {
             var totalFileSize = 0
             var total: Int = 0
              
             func calculationCompletion(_ totalSize: Int) {
-                self.requestAdjustmentStatusIds.removeAll()
+                if let operation =
+                    self.requestAssetBytesQueue.operations.first {
+                    if operation.isCancelled || operation.name != self.bytesOperationName {
+                        return
+                    }
+                }
                 DispatchQueue.main.async {
                     completion(
                         totalSize,
@@ -380,9 +340,6 @@ public extension PickerManager {
             }
             
             for photoAsset in self.selectedAssetArray {
-                if operation.isCancelled {
-                    return
-                }
                 if let fileSize = photoAsset.getPFileSize() {
                     totalFileSize += fileSize
                     total += 1
@@ -391,12 +348,9 @@ public extension PickerManager {
                     }
                     continue
                 }
-                let requestId = photoAsset.checkAdjustmentStatus { (isAdjusted, asset) in
+                photoAsset.checkAdjustmentStatus { (isAdjusted, asset) in
                     if isAdjusted {
                         if asset.mediaType == .photo {
-                            if operation.isCancelled {
-                                return
-                            }
                             asset.requestImageData(
                                 iCloudHandler: nil,
                                 progressHandler: nil
@@ -417,9 +371,6 @@ public extension PickerManager {
                                 }
                             }
                         }else {
-                            if operation.isCancelled {
-                                return
-                            }
                             asset.requestAVAsset(iCloudHandler: nil, progressHandler: nil) { (sAsset, avAsset, info) in
                                 if let urlAsset = avAsset as? AVURLAsset {
                                     totalFileSize += urlAsset.url.fileSize
@@ -444,22 +395,16 @@ public extension PickerManager {
                         calculationCompletion(totalFileSize)
                     }
                 }
-                if let id = requestId, let phAsset = photoAsset.phAsset {
-                    self.requestAdjustmentStatusIds.append([id: phAsset])
-                }
             }
         }
+        bytesOperationName = UUID().uuidString
+        operation.name = bytesOperationName
         requestAssetBytesQueue.addOperation(operation)
     }
     
     /// 取消获取资源文件大小
     func cancelRequestAssetFileSize() {
-        for map in requestAdjustmentStatusIds {
-            if let id = map.keys.first, let phAsset = map.values.first {
-                phAsset.cancelContentEditingInputRequest(id)
-            }
-        }
-        requestAdjustmentStatusIds.removeAll()
+        bytesOperationName = nil
         requestAssetBytesQueue.cancelAllOperations()
     }
 }

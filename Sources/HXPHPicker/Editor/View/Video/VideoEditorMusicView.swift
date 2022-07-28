@@ -11,7 +11,6 @@ protocol VideoEditorMusicViewDelegate: AnyObject {
     func musicView(_ musicView: VideoEditorMusicView, didSelectMusic audioPath: String?)
     func musicView(deselectMusic musicView: VideoEditorMusicView)
     func musicView(didSearchButton musicView: VideoEditorMusicView)
-    func musicView(didVolumeButton musicView: VideoEditorMusicView)
     func musicView(_ musicView: VideoEditorMusicView, didOriginalSoundButtonClick isSelected: Bool)
     func musicView(_ musicView: VideoEditorMusicView, didShowLyricButton isSelected: Bool, music: VideoEditorMusic?)
 }
@@ -45,30 +44,6 @@ class VideoEditorMusicView: UIView {
     }()
     @objc func didSearchButtonClick() {
         delegate?.musicView(didSearchButton: self)
-    }
-    lazy var volumeBgView: UIVisualEffectView = {
-        let visualEffect = UIBlurEffect.init(style: .light)
-        let view = UIVisualEffectView.init(effect: visualEffect)
-        view.layer.cornerRadius = 15
-        view.layer.masksToBounds = true
-        view.contentView.addSubview(volumeButton)
-        view.backgroundColor = UIColor.black.withAlphaComponent(0.2)
-        return view
-    }()
-    lazy var volumeButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setImage("hx_editor_video_music_volume".image?.withRenderingMode(.alwaysTemplate), for: .normal)
-        button.setTitle("音量".localized, for: .normal)
-        button.imageEdgeInsets = UIEdgeInsets(top: 0, left: -3, bottom: 0, right: 0)
-        button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 3, bottom: 0, right: 0)
-        button.titleLabel?.font = .mediumPingFang(ofSize: 14)
-        button.tintColor = .white
-        button.imageView?.tintColor = .white
-        button.addTarget(self, action: #selector(didVolumeButtonClick), for: .touchUpInside)
-        return button
-    }()
-    @objc func didVolumeButtonClick() {
-        delegate?.musicView(didVolumeButton: self)
     }
     lazy var flowLayout: UICollectionViewFlowLayout = {
         let flowLayout = UICollectionViewFlowLayout()
@@ -178,9 +153,9 @@ class VideoEditorMusicView: UIView {
     var currentPlayIndex: Int = -2
     var beforeIsSelect = false
     var musics: [VideoEditorMusic] = []
-    let config: VideoEditorConfiguration.Music
+    let config: VideoEditorConfiguration.MusicConfig
     var didEnterPlayGround = false
-    init(config: VideoEditorConfiguration.Music) {
+    init(config: VideoEditorConfiguration.MusicConfig) {
         self.config = config
         super.init(frame: .zero)
         setMusics(infos: config.infos)
@@ -189,7 +164,6 @@ class VideoEditorMusicView: UIView {
         if config.showSearch {
             addSubview(searchBgView)
         }
-        addSubview(volumeBgView)
         addSubview(backgroundButton)
         addSubview(originalSoundButton)
         addSubview(showLyricButton)
@@ -230,10 +204,9 @@ class VideoEditorMusicView: UIView {
     func setMusics(infos: [VideoEditorMusicInfo]) {
         var musicArray: [VideoEditorMusic] = []
         for musicInfo in infos {
-            let music = VideoEditorMusic(
-                audioURL: musicInfo.audioURL,
-                lrc: musicInfo.lrc
-            )
+            let music = VideoEditorMusic(audioURL: musicInfo.audioURL,
+                                         lrc: musicInfo.lrc)
+            music.urlType = musicInfo.urlType
             musicArray.append(music)
         }
         musics = musicArray
@@ -310,23 +283,6 @@ class VideoEditorMusicView: UIView {
         }
         searchBgView.frame = CGRect(x: UIDevice.leftMargin + margin, y: 0, width: searchButtonWidth, height: 30)
         searchButton.frame = searchBgView.bounds
-        
-        let volumeTextWidth = volumeButton.currentTitle?.width(
-            ofFont: UIFont.mediumPingFang(ofSize: 14),
-            maxHeight: 30
-        ) ?? 0
-        var volumeButtonWidth = volumeTextWidth + (volumeButton.currentImage?.width ?? 0) + 20
-        if volumeButtonWidth < 65 {
-            volumeButtonWidth = 65
-        }
-        volumeBgView.frame = CGRect(
-            x: width - UIDevice.rightMargin - margin - volumeButtonWidth,
-            y: 0,
-            width: volumeButtonWidth,
-            height: 30
-        )
-        volumeButton.frame = volumeBgView.bounds
-        
         pageWidth = width - margin * 2 - UIDevice.leftMargin - UIDevice.rightMargin + flowLayout.minimumLineSpacing
         collectionView.frame = CGRect(x: 0, y: searchBgView.frame.maxY + 15, width: width, height: 90)
         flowLayout.sectionInset = UIEdgeInsets(

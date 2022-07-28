@@ -12,16 +12,12 @@ import Kingfisher
 
 protocol EditorChartletViewDelegate: AnyObject {
     func chartletView(backClick chartletView: EditorChartletView)
-    func chartletView(
-        _ chartletView: EditorChartletView,
-        loadTitleChartlet response: @escaping EditorTitleChartletResponse
-    )
-    func chartletView(
-        _ chartletView: EditorChartletView,
-        titleChartlet: EditorChartlet,
-        titleIndex: Int,
-        loadChartletList response: @escaping EditorChartletListResponse
-    )
+    func chartletView(_ chartletView: EditorChartletView,
+                      loadTitleChartlet response: @escaping EditorTitleChartletResponse)
+    func chartletView(_ chartletView: EditorChartletView,
+                      titleChartlet: EditorChartlet,
+                      titleIndex: Int,
+                      loadChartletList response: @escaping EditorChartletListResponse)
     func chartletView(_ chartletView: EditorChartletView, didSelectImage image: UIImage, imageData: Data?)
 }
 
@@ -70,38 +66,8 @@ class EditorChartletView: UIView {
             view.contentInsetAdjustmentBehavior = .never
         }
         view.register(EditorChartletViewCell.self, forCellWithReuseIdentifier: "EditorChartletViewCellTitleID")
-        let pan = UIPanGestureRecognizer(
-            target: self,
-            action: #selector(titleBgViewPanGestureRecognizerClick(pan:))
-        )
-        view.addGestureRecognizer(pan)
         return view
     }()
-    var initialY: CGFloat = 0
-    @objc
-    func titleBgViewPanGestureRecognizerClick(pan: UIPanGestureRecognizer) {
-        let point = pan.translation(in: titleBgView)
-        switch pan.state {
-        case .began:
-            initialY = self.y
-        case .changed:
-            if point.y < 0 {
-                y = initialY
-            }else {
-                y = initialY + point.y
-            }
-        case .ended, .cancelled, .failed:
-            if point.y > 100 {
-                delegate?.chartletView(backClick: self)
-            }else {
-                UIView.animate(withDuration: 0.25) {
-                    self.y = self.initialY
-                }
-            }
-        default:
-            break
-        }
-    }
     lazy var listFlowLayout: UICollectionViewFlowLayout = {
         let flowLayout = UICollectionViewFlowLayout()
         flowLayout.scrollDirection = .horizontal
@@ -130,12 +96,12 @@ class EditorChartletView: UIView {
     let editorType: EditorController.EditorType
     var previewView: EditorChartletPreviewView?
     var previewIndex: Int = -1
-    let config: EditorChartletConfiguration
+    let config: EditorChartletConfig
     var titles: [EditorChartletTitle] = []
     var selectedTitleIndex: Int = 0
     var configTitles: [EditorChartlet] = []
     init(
-        config: EditorChartletConfiguration,
+        config: EditorChartletConfig,
         editorType: EditorController.EditorType
     ) {
         self.config = config
@@ -413,58 +379,34 @@ extension EditorChartletView: UICollectionViewDataSource,
             return
         }
         titleChartle.isLoading = true
-        if let listHandler = config.listHandler {
-            listHandler(index) { [weak self] titleIndex, chartletList in
-                guard let self = self else { return }
-                titleChartle.isLoading = false
-                self.titles[titleIndex].chartletList = chartletList
-                let cell = self.listView.cellForItem(
-                    at: IndexPath(item: titleIndex, section: 0)
-                ) as? EditorChartletViewListCell
-                cell?.chartletList = titleChartle.chartletList
-                cell?.stopLoad()
-            }
-            return
-        }
-        delegate?.chartletView(
-            self,
-            titleChartlet: configTitles[index],
-            titleIndex: index,
-            loadChartletList: { [weak self] item, chartletList in
-                guard let self = self else { return }
-                titleChartle.isLoading = false
-                self.titles[item].chartletList = chartletList
-                let cell = self.listView.cellForItem(
-                    at: IndexPath(item: item, section: 0)
-                ) as? EditorChartletViewListCell
-                cell?.chartletList = titleChartle.chartletList
-                cell?.stopLoad()
+        delegate?.chartletView(self,
+                               titleChartlet: configTitles[index],
+                               titleIndex: index,
+                               loadChartletList: { [weak self] item, chartletList in
+            guard let self = self else { return }
+            titleChartle.isLoading = false
+            self.titles[item].chartletList = chartletList
+            let cell = self.listView.cellForItem(at: IndexPath(item: index, section: 0)) as? EditorChartletViewListCell
+            cell?.chartletList = titleChartle.chartletList
+            cell?.stopLoad()
         })
     }
     func firstRequest() {
         if titles.isEmpty {
             loadingView.startAnimating()
-            if let titleHandler = config.titleHandler {
-                titleHandler { [weak self] titleChartlets in
-                    self?.loadTitlesCompletion(titleChartlets)
+            delegate?.chartletView(self, loadTitleChartlet: { [weak self] titleChartlets in
+                guard let self = self else { return }
+                self.loadingView.stopAnimating()
+                self.setupTitles(titleChartlets)
+                if self.config.loadScene == .scrollStop {
+                    self.requestData(index: 0)
                 }
-            }else {
-                delegate?.chartletView(self, loadTitleChartlet: { [weak self] titleChartlets in
-                    self?.loadTitlesCompletion(titleChartlets)
-                })
-            }
+                self.titleView.reloadData()
+                self.listView.reloadData()
+            })
             return
         }
         requestData(index: 0)
-    }
-    func loadTitlesCompletion(_ titles: [EditorChartlet]) {
-        loadingView.stopAnimating()
-        setupTitles(titles)
-        if config.loadScene == .scrollStop {
-            requestData(index: 0)
-        }
-        titleView.reloadData()
-        listView.reloadData()
     }
     func listCell(_ cell: EditorChartletViewListCell, didSelectImage image: UIImage, imageData: Data?) {
         delegate?.chartletView(self, didSelectImage: image, imageData: imageData)

@@ -129,14 +129,10 @@ class PhotoEditorDrawView: UIView, UIGestureRecognizerDelegate {
     func getBrushData() -> [PhotoEditorBrushData] {
         var brushsData: [PhotoEditorBrushData] = []
         for path in linePaths {
-            if let color = path.color {
-                let brushData = PhotoEditorBrushData(
-                    color: color,
-                    points: path.points,
-                    lineWidth: path.lineWidth
-                )
-                brushsData.append(brushData)
-            }
+            let brushData = PhotoEditorBrushData.init(color: path.color!,
+                                                      points: path.points,
+                                                      lineWidth: path.lineWidth)
+            brushsData.append(brushData)
         }
         return brushsData
     }

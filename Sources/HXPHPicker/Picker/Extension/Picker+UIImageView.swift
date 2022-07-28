@@ -15,26 +15,41 @@ extension UIImageView {
     
     #if canImport(Kingfisher)
     @discardableResult
+    // swiftlint:disable function_body_length
     func setImage(
         for asset: PhotoAsset,
         urlType: DonwloadURLType,
-        indicatorColor: UIColor? = nil,
         progressBlock: DownloadProgressBlock? = nil,
         downloadTask: ((Kingfisher.DownloadTask?) -> Void)? = nil,
-        completionHandler: ImageView.ImageCompletion? = nil
+        completionHandler: ((UIImage?, KingfisherError?, PhotoAsset) -> Void)? = nil
     ) -> Any? {
+        // swiftlint:enable function_body_length
         #if HXPICKER_ENABLE_EDITOR
-        if asset.photoEdit != nil || asset.videoEdit != nil {
-            getEditedImage(asset, urlType: urlType, completionHandler: completionHandler)
+        if let photoEdit = asset.photoEdit {
+            if urlType == .thumbnail {
+                image = photoEdit.editedImage
+                completionHandler?(photoEdit.editedImage, nil, asset)
+            }else {
+                do {
+                    let imageData = try Data.init(contentsOf: photoEdit.editedImageURL)
+                    let img = DefaultImageProcessor.default.process(item: .data(imageData), options: .init([]))!
+                    let kfView = self as? AnimatedImageView
+                    kfView?.image = img
+                }catch {
+                    image = photoEdit.editedImage
+                }
+                completionHandler?(photoEdit.editedImage, nil, asset)
+            }
+            return nil
+        }else if let videoEdit = asset.videoEdit {
+            image = videoEdit.coverImage
+            completionHandler?(videoEdit.coverImage, nil, asset)
             return nil
         }
         #endif
         let isThumbnail = urlType == .thumbnail
         if isThumbnail {
             kf.indicatorType = .activity
-            if let color = indicatorColor {
-                (kf.indicator?.view as? UIActivityIndicatorView)?.color = color
-            }
         }
         var url = URL(string: "")
         var placeholderImage: UIImage?
@@ -46,7 +61,7 @@ extension UIImageView {
             let processor = DownsamplingImageProcessor(size: imageAsset.thumbnailSize)
             options = isThumbnail ?
                 [.onlyLoadFirstFrame, .processor(processor), .cacheOriginalImage] :
-                []
+                [.backgroundDecode]
         }else if let videoAsset = asset.networkVideoAsset {
             if let coverImage = videoAsset.coverImage {
                 image = coverImage
@@ -76,28 +91,38 @@ extension UIImageView {
             url = videoAsset.videoURL
         }
         if let url = url, loadVideoCover {
-            let provider = AVAssetImageDataProvider(assetURL: url, seconds: 0.1)
-            provider.assetImageGenerator.appliesPreferredTrackTransform = true
-            let task = KF.dataProvider(provider)
-                .onSuccess { (result) in
-                    let image = result.image
-                    let videoSize: CGSize?
-                    if asset.isNetworkAsset {
-                        videoSize = asset.networkVideoAsset?.videoSize
-                    }else {
-                        videoSize = asset.localVideoAsset?.videoSize
+//            func loadVideoCover() {
+                let provider = AVAssetImageDataProvider(assetURL: url, seconds: 0.1)
+                provider.assetImageGenerator.appliesPreferredTrackTransform = true
+                let task = KF.dataProvider(provider)
+                    .onSuccess { (result) in
+                        let image = result.image
+                        let videoSize: CGSize?
+                        if asset.isNetworkAsset {
+                            videoSize = asset.networkVideoAsset?.videoSize
+                        }else {
+                            videoSize = asset.localVideoAsset?.videoSize
+                        }
+                        if let videoSize = videoSize, videoSize.equalTo(.zero) {
+                            asset.localVideoAsset?.videoSize = image.size
+                            asset.networkVideoAsset?.videoSize = image.size
+                        }
+                        completionHandler?(image, nil, asset)
                     }
-                    if let videoSize = videoSize, videoSize.equalTo(.zero) {
-                        asset.localVideoAsset?.videoSize = image.size
-                        asset.networkVideoAsset?.videoSize = image.size
+                    .onFailure { (error) in
+                        completionHandler?(nil, error, asset)
                     }
-                    completionHandler?(image, nil, asset)
-                }
-                .onFailure { (error) in
-                    completionHandler?(nil, error, asset)
-                }
-                .set(to: self)
-            return task
+                    .set(to: self)
+//                downloadTask?(task)
+                return task
+//            }
+//            let avAsset = AVURLAsset(url: url)
+//            avAsset.loadValuesAsynchronously(forKeys: ["duration"]) {
+//                DispatchQueue.main.async {
+//                    loadVideoCover()
+//                }
+//            }
+//            return avAsset
         }
         return kf.setImage(
             with: url,
@@ -122,7 +147,6 @@ extension UIImageView {
                     }
                 case .networkVideo:
                     asset.networkVideoAsset?.coverImage = value.image
-                    asset.networkVideoAsset?.videoSize = value.image.size
                 default: break
                 }
                 completionHandler?(value.image, nil, asset)
@@ -131,33 +155,6 @@ extension UIImageView {
             }
         }
     }
-    #if HXPICKER_ENABLE_EDITOR
-    private func getEditedImage(
-        _ photoAsset: PhotoAsset,
-        urlType: DonwloadURLType,
-        completionHandler: ImageView.ImageCompletion?
-    ) {
-        if let photoEdit = photoAsset.photoEdit {
-            if urlType == .thumbnail {
-                image = photoEdit.editedImage
-                completionHandler?(photoEdit.editedImage, nil, photoAsset)
-            }else {
-                do {
-                    let imageData = try Data(contentsOf: photoEdit.editedImageURL)
-                    let img = DefaultImageProcessor.default.process(item: .data(imageData), options: .init([]))!
-                    let kfView = self as? AnimatedImageView
-                    kfView?.image = img
-                }catch {
-                    image = photoEdit.editedImage
-                }
-                completionHandler?(photoEdit.editedImage, nil, photoAsset)
-            }
-        }else if let videoEdit = photoAsset.videoEdit {
-            image = videoEdit.coverImage
-            completionHandler?(videoEdit.coverImage, nil, photoAsset)
-        }
-    }
-    #endif
     #else
     @discardableResult
     func setVideoCoverImage(
@@ -174,9 +171,6 @@ extension UIImageView {
         var videoURL: URL?
         if let videoAsset = asset.networkVideoAsset {
             if let coverImage = videoAsset.coverImage {
-                if videoAsset.videoSize.equalTo(.zero) {
-                    asset.networkVideoAsset?.videoSize = coverImage.size
-                }
                 completionHandler?(coverImage, asset)
                 return nil
             }else {
@@ -189,9 +183,6 @@ extension UIImageView {
             }
         }else if let videoAsset = asset.localVideoAsset {
             if let coverImage = videoAsset.image {
-                if videoAsset.videoSize.equalTo(.zero) {
-                    asset.localVideoAsset?.videoSize = coverImage.size
-                }
                 completionHandler?(coverImage, asset)
                 return nil
             }
@@ -205,16 +196,12 @@ extension UIImageView {
             atTime: 0.1,
             imageGenerator: imageGenerator
         ) { videoURL, image, result in
-            if let image = image {
-                if asset.isNetworkAsset {
-                    asset.networkVideoAsset?.videoSize = image.size
-                    asset.networkVideoAsset?.coverImage = image
-                }else {
-                    asset.localVideoAsset?.videoSize = image.size
-                    asset.localVideoAsset?.image = image
-                }
-            }
             if result == .cancelled { return }
+            if asset.isNetworkAsset {
+                asset.networkVideoAsset?.coverImage = image
+            }else {
+                asset.localVideoAsset?.image = image
+            }
             completionHandler?(image, asset)
         }
     }
@@ -224,15 +211,13 @@ extension UIImageView {
 extension ImageView {
     
     #if canImport(Kingfisher)
-    typealias ImageCompletion = (UIImage?, KingfisherError?, PhotoAsset) -> Void
-    
     @discardableResult
     func setImage(
         for asset: PhotoAsset,
         urlType: DonwloadURLType,
         progressBlock: DownloadProgressBlock? = nil,
         downloadTask: ((Kingfisher.DownloadTask?) -> Void)? = nil,
-        completionHandler: ImageCompletion? = nil
+        completionHandler: ((UIImage?, KingfisherError?, PhotoAsset) -> Void)? = nil
     ) -> Any? {
         imageView.setImage(
             for: asset,

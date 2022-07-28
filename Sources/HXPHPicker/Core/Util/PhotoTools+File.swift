@@ -15,10 +15,12 @@ public extension PhotoTools {
     static func fileSize(atPath path: String) -> Int {
         let fileManager = FileManager.default
         if fileManager.fileExists(atPath: path) {
-            let fileSize = try? fileManager.attributesOfItem(atPath: path)[.size]
-            if let size = fileSize as? Int {
-                return size
-            }
+            do {
+                let fileSize = try fileManager.attributesOfItem(atPath: path)[.size]
+                if let size = fileSize as? Int {
+                    return size
+                }
+            }catch {}
         }
         return 0
     }
@@ -38,20 +40,15 @@ public extension PhotoTools {
         return folderSize
     }
     
-    static func getSystemDocumentFolderPath() -> String {
-        NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last!
-    }
-    
     /// 获取系统缓存文件夹路径
     static func getSystemCacheFolderPath() -> String {
-        NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true).last!
+        return NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true).last!
     }
     
     /// 获取图片缓存文件夹路径
     static func getImageCacheFolderPath() -> String {
         var cachePath = getSystemCacheFolderPath()
         cachePath.append(contentsOf: "/com.silence.HXPHPicker/imageCache")
-        folderExists(atPath: cachePath)
         return cachePath
     }
     
@@ -59,35 +56,18 @@ public extension PhotoTools {
     static func getVideoCacheFolderPath() -> String {
         var cachePath = getSystemCacheFolderPath()
         cachePath.append(contentsOf: "/com.silence.HXPHPicker/videoCache")
-        folderExists(atPath: cachePath)
         return cachePath
     }
     
     static func getAudioTmpFolderPath() -> String {
         var tmpPath = NSTemporaryDirectory()
         tmpPath.append(contentsOf: "com.silence.HXPHPicker/audioCache")
-        folderExists(atPath: tmpPath)
         return tmpPath
-    }
-    
-    static func getLivePhotoImageCacheFolderPath() -> String {
-        var cachePath = getImageCacheFolderPath()
-        cachePath.append(contentsOf: "/LivePhoto")
-        folderExists(atPath: cachePath)
-        return cachePath
-    }
-    
-    static func getLivePhotoVideoCacheFolderPath() -> String {
-        var cachePath = getVideoCacheFolderPath()
-        cachePath.append(contentsOf: "/LivePhoto")
-        folderExists(atPath: cachePath)
-        return cachePath
     }
     
     /// 删除缓存
     static func removeCache() {
         removeVideoCache()
-        removeImageCache()
         removeAudioCache()
     }
     
@@ -95,12 +75,6 @@ public extension PhotoTools {
     @discardableResult
     static func removeVideoCache() -> Bool {
         return removeFile(filePath: getVideoCacheFolderPath())
-    }
-    
-    /// 删除图片缓存
-    @discardableResult
-    static func removeImageCache() -> Bool {
-        return removeFile(filePath: getImageCacheFolderPath())
     }
     
     /// 删除音频临时缓存
@@ -120,6 +94,12 @@ public extension PhotoTools {
     @discardableResult
     static func getVideoCacheURL(for key: String) -> URL {
         var cachePath = getVideoCacheFolderPath()
+        let fileManager = FileManager.default
+        if !fileManager.fileExists(atPath: cachePath) {
+            do {
+                try fileManager.createDirectory(atPath: cachePath, withIntermediateDirectories: true, attributes: nil)
+            } catch {}
+        }
         cachePath.append(contentsOf: "/" + key.md5 + ".mp4")
         return URL.init(fileURLWithPath: cachePath)
     }
@@ -127,6 +107,10 @@ public extension PhotoTools {
     @discardableResult
     static func getAudioTmpURL(for key: String) -> URL {
         var cachePath = getAudioTmpFolderPath()
+        let fileManager = FileManager.default
+        if !fileManager.fileExists(atPath: cachePath) {
+            try? fileManager.createDirectory(atPath: cachePath, withIntermediateDirectories: true, attributes: nil)
+        }
         cachePath.append(contentsOf: "/" + key.md5 + ".mp3")
         return URL.init(fileURLWithPath: cachePath)
     }
@@ -147,14 +131,10 @@ public extension PhotoTools {
         return fileManager.fileExists(atPath: filePath)
     }
     
-    static func getSystemTempFolderPath() -> String {
-        NSTemporaryDirectory()
-    }
-    
     /// 获取对应后缀的临时路径
     @discardableResult
     static func getTmpURL(for suffix: String) -> URL {
-        var tmpPath = getSystemTempFolderPath()
+        var tmpPath = NSTemporaryDirectory()
         tmpPath.append(contentsOf: String.fileName(suffix: suffix))
         let tmpURL = URL.init(fileURLWithPath: tmpPath)
         return tmpURL
@@ -205,7 +185,7 @@ public extension PhotoTools {
     static func write(
         toFile fileURL: URL? = nil,
         imageData: Data) -> URL? {
-        let imageURL = fileURL == nil ? getImageTmpURL(imageData.isGif ? .gif : .png) : fileURL!
+        let imageURL = fileURL == nil ? getImageTmpURL(imageData.isGif ? .gif : .jpg) : fileURL!
         do {
             if FileManager.default.fileExists(atPath: imageURL.path) {
                 try FileManager.default.removeItem(at: imageURL)
@@ -247,13 +227,6 @@ public extension PhotoTools {
             return true
         } catch {
             return false
-        }
-    }
-    
-    static func folderExists(atPath path: String) {
-        let fileManager = FileManager.default
-        if !fileManager.fileExists(atPath: path) {
-            try? fileManager.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
         }
     }
 }

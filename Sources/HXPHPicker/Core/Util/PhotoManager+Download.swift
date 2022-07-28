@@ -7,7 +7,6 @@
 
 import UIKit
 
-#if HXPICKER_ENABLE_PICKER || HXPICKER_ENABLE_EDITOR
 extension PhotoManager: URLSessionDownloadDelegate {
     
     @discardableResult
@@ -106,14 +105,7 @@ extension PhotoManager: URLSessionDownloadDelegate {
         downloadTask: URLSessionDownloadTask,
         didFinishDownloadingTo location: URL
     ) {
-        let responseURL: URL
-        if let url = downloadTask.originalRequest?.url {
-            responseURL = url
-        }else if let url = downloadTask.currentRequest?.url {
-            responseURL = url
-        }else {
-            return
-        }
+        let responseURL = downloadTask.currentRequest!.url!
         let key = responseURL.absoluteString
         let completionHandler = downloadCompletions[key]
         let ext = downloadExts[key]
@@ -157,12 +149,7 @@ extension PhotoManager: URLSessionDownloadDelegate {
         task: URLSessionTask,
         didCompleteWithError error: Error?
     ) {
-        let responseURL: URL
-        if let url = task.originalRequest?.url {
-            responseURL = url
-        }else if let url = task.currentRequest?.url {
-            responseURL = url
-        }else {
+        guard let responseURL = task.currentRequest?.url else {
             return
         }
         let key = responseURL.absoluteString
@@ -176,4 +163,3 @@ extension PhotoManager: URLSessionDownloadDelegate {
         self.removeTask(responseURL)
     }
 }
-#endif

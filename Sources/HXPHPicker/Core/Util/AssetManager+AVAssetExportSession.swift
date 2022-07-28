@@ -112,8 +112,8 @@ public extension AssetManager {
         exportPreset: ExportPreset,
         videoQuality: Int,
         exportSession: ((AVAssetExportSession) -> Void)? = nil,
-        completionHandler: ((Result<URL, AssetManager.AVAssetError>) -> Void)?
-    ) {
+        completionHandler:
+            @escaping (Result<URL, AssetManager.AVAssetError>) -> Void) {
         requestAVAsset(
             for: asset,
             iCloudHandler: nil,
@@ -121,34 +121,23 @@ public extension AssetManager {
         ) { (result) in
             switch result {
             case .success(let avResult):
-                let avAsset = avResult.avAsset
-                avAsset.loadValuesAsynchronously(forKeys: ["tracks"]) {
-                    if avAsset.statusOfValue(forKey: "tracks", error: nil) != .loaded {
-                        DispatchQueue.main.async {
-                            completionHandler?(.failure(.init(info: nil, error: .exportFailed(nil))))
-                        }
-                        return
-                    }
-                    let session = self.exportVideoURL(
-                        forVideo: avResult.avAsset,
-                        toFile: fileURL,
-                        exportPreset: exportPreset,
-                        videoQuality:
-                            videoQuality) { videoURL, error in
-                        if let videoURL = videoURL {
-                            completionHandler?(.success(videoURL))
-                        }else {
-                            completionHandler?(.failure(.init(info: avResult.info, error: .exportFailed(error))))
-                        }
-                    }
-                    if let session = session {
-                        DispatchQueue.main.async {
-                            exportSession?(session)
-                        }
+                let session = self.exportVideoURL(
+                    forVideo: avResult.avAsset,
+                    toFile: fileURL,
+                    exportPreset: exportPreset,
+                    videoQuality:
+                        videoQuality) { videoURL, error in
+                    if let videoURL = videoURL {
+                        completionHandler(.success(videoURL))
+                    }else {
+                        completionHandler(.failure(.init(info: avResult.info, error: .exportFailed(error))))
                     }
                 }
+                if let session = session {
+                    exportSession?(session)
+                }
             case .failure(let error):
-                completionHandler?(.failure(error))
+                completionHandler(.failure(error))
             }
         }
     }
@@ -159,8 +148,8 @@ public extension AssetManager {
         toFile fileURL: URL,
         exportPreset: ExportPreset,
         videoQuality: Int,
-        completionHandler: ((URL?, Error?) -> Void)?
-    ) -> AVAssetExportSession? {
+        completionHandler:
+            @escaping (URL?, Error?) -> Void) -> AVAssetExportSession? {
         var presetName = exportPreset.name
         let presets = AVAssetExportSession.exportPresets(compatibleWith: avAsset)
         if !presets.contains(presetName) {
@@ -190,15 +179,15 @@ public extension AssetManager {
             DispatchQueue.main.async {
                 switch exportSession?.status {
                 case .completed:
-                    completionHandler?(fileURL, nil)
+                    completionHandler(fileURL, nil)
                 case .failed, .cancelled:
-                    completionHandler?(nil, exportSession?.error)
+                    completionHandler(nil, exportSession?.error)
                 default: break
                 }
             }
         })
         if exportSession == nil {
-            completionHandler?(nil, exportSession?.error)
+            completionHandler(nil, exportSession?.error)
         }
         return exportSession
     }

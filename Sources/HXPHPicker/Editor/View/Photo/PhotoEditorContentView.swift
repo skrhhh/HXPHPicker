@@ -14,15 +14,9 @@ protocol PhotoEditorContentViewDelegate: AnyObject {
     func contentView(drawViewBeganDraw contentView: PhotoEditorContentView)
     func contentView(drawViewEndDraw contentView: PhotoEditorContentView)
     func contentView(_ contentView: PhotoEditorContentView, updateStickerText item: EditorStickerItem)
-    func contentView(didRemoveAudio contentView: PhotoEditorContentView)
 }
 
 class PhotoEditorContentView: UIView {
-    
-    enum EditType {
-        case image
-        case video
-    }
     
     weak var delegate: PhotoEditorContentViewDelegate?
     
@@ -31,11 +25,6 @@ class PhotoEditorContentView: UIView {
     var stickerMinScale: ((CGSize) -> CGFloat)?
     
     var stickerMaxScale: ((CGSize) -> CGFloat)?
-    
-    lazy var videoView: VideoEditorPlayerView = {
-        let videoView = VideoEditorPlayerView()
-        return videoView
-    }()
     
     lazy var imageView: UIImageView = {
         var imageView: UIImageView
@@ -71,72 +60,21 @@ class PhotoEditorContentView: UIView {
         view.delegate = self
         return view
     }()
-    lazy var longPressGesture: UILongPressGestureRecognizer = {
-        let long = UILongPressGestureRecognizer(
-            target: self,
-            action: #selector(longPressGestureRecognizerClick(_:))
-        )
-        long.minimumPressDuration = 0.2
-        long.isEnabled = false
-        return long
-    }()
-    let mosaicConfig: PhotoEditorConfiguration.Mosaic
-    let editType: EditType
-    init(
-        editType: EditType,
-        mosaicConfig: PhotoEditorConfiguration.Mosaic
-    ) {
+    
+    let mosaicConfig: PhotoEditorConfiguration.MosaicConfig
+    
+    init(mosaicConfig: PhotoEditorConfiguration.MosaicConfig) {
         self.mosaicConfig = mosaicConfig
-        self.editType = editType
         super.init(frame: .zero)
-        if editType == .image {
-            addSubview(imageView)
-            addSubview(mosaicView)
-            
-        }else {
-            addSubview(videoView)
-        }
+        addSubview(imageView)
+        addSubview(mosaicView)
         addSubview(drawView)
         addSubview(stickerView)
-        addGestureRecognizer(longPressGesture)
-    }
-    var originalImage: UIImage?
-    var tempImage: UIImage?
-    @objc
-    func longPressGestureRecognizerClick(
-        _ longPressGesture: UILongPressGestureRecognizer
-    ) {
-        switch longPressGesture.state {
-        case .began:
-            if editType == .image {
-                tempImage = imageView.image
-                if let image = originalImage {
-                    setImage(image)
-                }
-            }else {
-                videoView.isLookOriginal = true
-            }
-        case .ended, .cancelled, .failed:
-            if editType == .image {
-                if let image = tempImage {
-                    setImage(image)
-                }
-                tempImage = nil
-            }else {
-                videoView.isLookOriginal = false
-            }
-        default:
-            break
-        }
     }
     func setMosaicOriginalImage(_ image: UIImage?) {
         mosaicView.originalImage = image
     }
     func setImage(_ image: UIImage) {
-        if editType == .video {
-            videoView.coverImageView.image = image
-            return
-        }
         #if canImport(Kingfisher)
         let view = imageView as! AnimatedImageView
         view.image = image
@@ -147,15 +85,9 @@ class PhotoEditorContentView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        if editType == .image {
-            imageView.frame = bounds
-            mosaicView.frame = bounds
-        }else {
-            if videoView.superview == self {
-                videoView.frame = bounds
-            }
-        }
+        imageView.frame = bounds
         drawView.frame = bounds
+        mosaicView.frame = bounds
         stickerView.frame = bounds
     }
     required init?(coder: NSCoder) {
@@ -201,9 +133,6 @@ extension PhotoEditorContentView: EditorStickerViewDelegate {
             return maxScale
         }
         return 5
-    }
-    func stickerView(didRemoveAudio stickerView: EditorStickerView) {
-        delegate?.contentView(didRemoveAudio: self)
     }
 }
 extension PhotoEditorContentView: PhotoEditorMosaicViewDelegate {

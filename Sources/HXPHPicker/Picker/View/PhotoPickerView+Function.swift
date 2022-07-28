@@ -38,10 +38,6 @@ extension PhotoPickerView {
     }
     
     func setupEmptyView() {
-        if config.allowAddLimit && AssetManager.authorizationStatusIsLimited() {
-            emptyView.removeFromSuperview()
-            return
-        }
         if assets.isEmpty {
             collectionView.addSubview(emptyView)
         }else {
@@ -64,7 +60,7 @@ extension PhotoPickerView {
         if let photoAsset = photoAsset,
            var item = assets.firstIndex(of: photoAsset) {
             if needOffset {
-                item += offsetIndex
+                item += 1
             }
             collectionView.scrollToItem(
                 at: IndexPath(item: item, section: 0),
@@ -127,7 +123,7 @@ extension PhotoPickerView {
         if let photoAsset = photoAsset {
             item = assets.firstIndex(of: photoAsset) ?? item
             if needOffset {
-                item += offsetIndex
+                item += 1
             }
         }
         collectionView.scrollToItem(
@@ -167,7 +163,7 @@ extension PhotoPickerView {
         }
         if var item = assets.firstIndex(of: photoAsset) {
             if needOffset {
-                item += offsetIndex
+                item += 1
             }
             return IndexPath(item: item, section: 0)
         }
@@ -178,17 +174,10 @@ extension PhotoPickerView {
             collectionView.reloadItems(at: [indexPath])
         }
     }
-    func resetICloud(for photoAsset: PhotoAsset) {
-        guard let cell = getCell(for: photoAsset),
-              cell.inICloud else {
-            return
-        }
-        cell.requestICloudState()
-    }
     func getPhotoAsset(for index: Int) -> PhotoAsset {
         var photoAsset: PhotoAsset
         if needOffset {
-            photoAsset = assets[index - offsetIndex]
+            photoAsset = assets[index - 1]
         }else {
             photoAsset = assets[index]
         }
@@ -199,13 +188,13 @@ extension PhotoPickerView {
         if config.sort == .desc {
             assets.insert(photoAsset, at: 0)
             indexPath = IndexPath(
-                item: needOffset ? offsetIndex : 0,
+                item: needOffset ? 1 : 0,
                 section: 0
             )
         }else {
             assets.append(photoAsset)
             indexPath = IndexPath(
-                item: assets.count - 1,
+                item: needOffset ? assets.count : assets.count - 1,
                 section: 0
             )
         }
@@ -262,7 +251,7 @@ extension PhotoPickerView {
                 let inICloud = photoAsset.checkICloundStatus(
                     allowSyncPhoto: manager.config.allowSyncICloudWhenSelectPhoto,
                     hudAddedTo: self,
-                    completion: { _, isSuccess in
+                    completion: { isSuccess in
                     if isSuccess {
                         addAsset(showTip: true)
                     }
@@ -300,10 +289,6 @@ extension PhotoPickerView {
             let point = pan.location(in: collectionView)
             if let indexPath = collectionView.indexPathForItem(at: point),
                let cell = collectionView.cellForItem(at: indexPath) as? PhotoPickerBaseViewCell {
-                if let pickerCell = cell as? PhotoPickerViewCell,
-                   pickerCell.inICloud {
-                    return
-                }
                 dragView.image = cell.photoView.image
                 let keyWindow = UIApplication.shared.keyWindow
                 let rect = cell.convert(cell.photoView.frame, to: keyWindow)

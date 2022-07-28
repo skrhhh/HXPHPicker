@@ -22,9 +22,6 @@ public struct PhotoListCellConfiguration {
     /// 继承 PhotoPickerSelectableViewCell 加以修改
     public var customSelectableCellClass: PhotoPickerBaseViewCell.Type?
     
-    /// 如果资产在iCloud上，是否显示iCloud标示
-    public var showICloudMark: Bool = true
-    
     /// 背景颜色
     public var backgroundColor: UIColor?
     
@@ -39,9 +36,6 @@ public struct PhotoListCellConfiguration {
     /// 如果限制了照片/视频的文件大小，则无效
     public var showDisableMask: Bool = true
     
-    /// 照片视频不能同时选择并且视频最大选择数为1时视频cell是否隐藏选择框
-    public var singleVideoHideSelect: Bool = true
-    
     /// 选择框顶部的间距
     public var selectBoxTopMargin: CGFloat = 5
     
@@ -50,10 +44,6 @@ public struct PhotoListCellConfiguration {
     
     /// 选择框相关配置
     public var selectBox: SelectBoxConfiguration = .init()
-    
-    #if canImport(Kingfisher)
-    public var kf_indicatorColor: UIColor?
-    #endif
     
     public init() { }
 }

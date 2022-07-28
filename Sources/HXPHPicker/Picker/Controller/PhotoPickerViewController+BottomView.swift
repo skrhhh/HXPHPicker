@@ -31,17 +31,4 @@ extension PhotoPickerViewController: PhotoPickerBottomViewDelegate {
     ) {
         pickerController?.originalButtonCallback()
     }
-    
-    public func setOriginal(_ isOriginal: Bool) {
-        bottomView.boxControl.isSelected =  isOriginal
-        if !isOriginal {
-            // 取消
-            bottomView.cancelRequestAssetFileSize()
-        }else {
-            // 选中
-            bottomView.requestAssetBytes()
-        }
-        pickerController?.isOriginal = isOriginal
-        pickerController?.originalButtonCallback()
-    }
 }

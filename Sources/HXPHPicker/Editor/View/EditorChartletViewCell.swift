@@ -81,7 +81,7 @@ class EditorChartletViewCell: UICollectionViewCell {
             )
             let options: KingfisherOptionsInfo
             if url.isGif && editorType == .video {
-                options = [.memoryCacheExpiration(.expired)]
+                options = []
             }else {
                 options = [
                     .cacheOriginalImage,

@@ -15,28 +15,16 @@ public class CameraConfiguration: BaseConfiguration {
     public var cameraType: CameraController.CameraType = .normal
     
     /// 相机分辨率
-    public var sessionPreset: Preset = .hd1280x720
+    public var sessionPreset: Preset = .hd1920x1080
     
     /// 摄像头默认位置
     public var position: DevicePosition = .back
     
-    /// 默认闪光灯模式
-    public var flashMode: AVCaptureDevice.FlashMode = .auto
-    
-    /// 录制视频时设置的 `AVVideoCodecType`
-    /// iPhone7 以下为 `.h264`
-    public var videoCodecType: AVVideoCodecType = .h264
-    
     /// 视频最大录制时长
-    /// takePhotoMode = .click 支持不限制最大时长 (0 - 不限制)
-    /// takePhotoMode = .press 最小 1
     public var videoMaximumDuration: TimeInterval = 60
     
     /// 视频最短录制时长
     public var videoMinimumDuration: TimeInterval = 1
-    
-    /// 拍照方式
-    public var takePhotoMode: TakePhotoMode = .press
     
     /// 主题色
     public var tintColor: UIColor = .systemTintColor {
@@ -49,24 +37,6 @@ public class CameraConfiguration: BaseConfiguration {
     
     /// 摄像头最大缩放比例
     public var videoMaxZoomScale: CGFloat = 6
-    
-    /// 默认滤镜对应滤镜数组的下标，为 -1 默认不加滤镜
-    public var defaultFilterIndex: Int = -1
-    
-    /// 切换滤镜显示名称
-    public var changeFilterShowName: Bool = true
-    
-    /// 拍照时的滤镜数组，请与 videoFilters 效果保持一致
-    /// 左滑/右滑切换滤镜
-    public lazy var photoFilters: [CameraFilter] = [
-        InstantFilter(), Apply1977Filter(), ToasterFilter(), TransferFilter()
-    ]
-    
-    /// 录制视频的滤镜数组，请与 photoFilters 效果保持一致
-    /// 左滑/右滑切换滤镜
-    public lazy var videoFilters: [CameraFilter] = [
-        InstantFilter(), Apply1977Filter(), ToasterFilter(), TransferFilter()
-    ]
     
     #if HXPICKER_ENABLE_EDITOR
     /// 允许编辑
@@ -133,13 +103,6 @@ extension CameraConfiguration {
         case front
     }
     
-    public enum TakePhotoMode {
-        /// 长按
-        case press
-        /// 点击（支持不限制最大时长）
-        case click
-    }
-    
     public enum Preset {
         case vga640x480
         case iFrame960x540
@@ -180,20 +143,14 @@ extension CameraConfiguration {
     
     #if HXPICKER_ENABLE_EDITOR
     fileprivate func setupEditorColor() {
-        
-        videoEditor.cropConfirmView.finishButtonBackgroundColor = tintColor
-        videoEditor.cropConfirmView.finishButtonDarkBackgroundColor = tintColor
-        videoEditor.cropSize.aspectRatioSelectedColor = tintColor
+        videoEditor.cropView.finishButtonBackgroundColor = tintColor
+        videoEditor.cropView.finishButtonDarkBackgroundColor = tintColor
         videoEditor.toolView.finishButtonBackgroundColor = tintColor
         videoEditor.toolView.finishButtonDarkBackgroundColor = tintColor
         videoEditor.toolView.toolSelectedColor = tintColor
         videoEditor.toolView.musicSelectedColor = tintColor
         videoEditor.music.tintColor = tintColor
         videoEditor.text.tintColor = tintColor
-        videoEditor.filter = .init(
-            infos: videoEditor.filter.infos,
-            selectedColor: tintColor
-        )
         
         photoEditor.toolView.toolSelectedColor = tintColor
         photoEditor.toolView.finishButtonBackgroundColor = tintColor
@@ -202,8 +159,7 @@ extension CameraConfiguration {
         photoEditor.cropConfimView.finishButtonDarkBackgroundColor = tintColor
         photoEditor.cropping.aspectRatioSelectedColor = tintColor
         photoEditor.filter = .init(
-            infos: photoEditor.filter.infos,
-            selectedColor: tintColor
+            infos: PhotoTools.defaultFilters()
         )
         photoEditor.text.tintColor = tintColor
     }

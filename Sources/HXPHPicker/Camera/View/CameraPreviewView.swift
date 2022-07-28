@@ -18,23 +18,9 @@ protocol CameraPreviewViewDelegate: AnyObject {
 
 class CameraPreviewView: UIView {
     weak var delegate: CameraPreviewViewDelegate?
-    
-    lazy var metalView: PreviewMetalView = {
-        let metalView = PreviewMetalView()
-        return metalView
-    }()
-    lazy var filterNameLb: UILabel = {
-        let label = UILabel()
-        label.textColor = .white
-        label.textAlignment = .center
-        label.font = .boldSystemFont(ofSize: 45)
-        label.shadowColor = .black.withAlphaComponent(0.4)
-        label.shadowOffset = .init(width: -1, height: 1)
-        label.isUserInteractionEnabled = false
-        label.alpha = 0
-        label.isHidden = true
-        return label
-    }()
+    override class var layerClass: AnyClass {
+        return AVCaptureVideoPreviewLayer.self
+    }
     lazy var imageMaskView: UIImageView = {
         let view = UIImageView(image: PhotoManager.shared.cameraPreviewImage)
         view.contentMode = .scaleAspectFill
@@ -61,29 +47,25 @@ class CameraPreviewView: UIView {
     }
     var effectiveScale: CGFloat = 1
     var beginGestureScale: CGFloat = 1
-    
-    var pixelBuffer: CVPixelBuffer? {
-        didSet {
-            metalView.pixelBuffer = pixelBuffer
-        }
-    }
-    let cameraManager: CameraManager
-    init(
-        config: CameraConfiguration,
-        cameraManager: CameraManager
-    ) {
+    var previewLayer: AVCaptureVideoPreviewLayer?
+    var observe: NSKeyValueObservation?
+    init(config: CameraConfiguration) {
         self.config = config
-        self.cameraManager = cameraManager
         super.init(frame: .zero)
-        addSubview(metalView)
-        metalView.didPreviewing = { [weak self] isPreviewing in
-            guard let self = self else { return }
-            if isPreviewing {
-                self.removeMask()
-                self.delegate?.previewView(didPreviewing: self)
-            }
+        previewLayer = layer as? AVCaptureVideoPreviewLayer
+        previewLayer?.videoGravity = .resizeAspectFill
+        if #available(iOS 13.0, *) {
+            let observe =  previewLayer?.observe(
+                \.isPreviewing,
+                changeHandler: { [weak self] previewLayer, valueObservedChange in
+                    guard let self = self else { return }
+                    if previewLayer.isPreviewing {
+                        self.removeMask()
+                        self.delegate?.previewView(didPreviewing: self)
+                    }
+            })
+            self.observe = observe
         }
-        addSubview(filterNameLb)
         addSubview(focusView)
         addSubview(imageMaskView)
         addSubview(shadeView)
@@ -101,21 +83,8 @@ class CameraPreviewView: UIView {
             action: #selector(handleTapGesture(_:))
         )
         
-        let leftSwipe = UISwipeGestureRecognizer(
-            target: self,
-            action: #selector(handleSwipeGesture(_:))
-        )
-        leftSwipe.direction = .left
-        let rightSwipe = UISwipeGestureRecognizer(
-            target: self,
-            action: #selector(handleSwipeGesture(_:))
-        )
-        rightSwipe.direction = .right
-            
         addGestureRecognizer(pinch)
         addGestureRecognizer(tap)
-        addGestureRecognizer(leftSwipe)
-        addGestureRecognizer(rightSwipe)
     }
 
     @objc
@@ -130,38 +99,9 @@ class CameraPreviewView: UIView {
     
     @objc
     func handleTapGesture(_ tap: UITapGestureRecognizer) {
-        let point = tap.location(in: metalView)
+        let point = tap.location(in: self)
         PhotoTools.focusAnimation(for: focusView, at: point)
         delegate?.previewView(self, tappedToFocusAt: captureDevicePoint(for: point))
-    }
-    
-    @objc
-    func handleSwipeGesture(_ swipe: UISwipeGestureRecognizer) {
-        if swipe.direction == .left {
-            delegate?.previewView(didLeftSwipe: self)
-        }else {
-            delegate?.previewView(didRightSwipe: self)
-        }
-    }
-    func showFilterName(_ filterName: String, _ isRight: Bool) {
-        filterNameLb.layer.removeAllAnimations()
-        filterNameLb.text = filterName
-        filterNameLb.isHidden = false
-        filterNameLb.alpha = 0
-        filterNameLb.centerX = !isRight ? width * 0.5 + 50 :  width * 0.5 - 50
-        UIView.animate(withDuration: 0.25) {
-            self.filterNameLb.alpha = 1
-            self.filterNameLb.centerX = self.width * 0.5
-        } completion: { isFinished in
-            if !isFinished { return }
-            UIView.animate(withDuration: 0.25, delay: 1) {
-                self.filterNameLb.alpha = 0
-            } completion: { _ in
-                if self.filterNameLb.alpha == 0 {
-                    self.filterNameLb.isHidden = true
-                }
-            }
-        }
     }
     
     func initialFocus() {
@@ -169,10 +109,12 @@ class CameraPreviewView: UIView {
         PhotoTools.focusAnimation(for: focusView, at: point)
         delegate?.previewView(self, tappedToFocusAt: captureDevicePoint(for: point))
     }
+    
+    func setSession(_ session: AVCaptureSession) {
+        previewLayer?.session = session
+    }
+    
     func resetOrientation() {
-        
-        guard let capture = cameraManager.videoOutput.connection(with: .video),
-              capture.isVideoOrientationSupported else { return }
         let videoOrientation: AVCaptureVideoOrientation
         let interfaceOrientation = UIApplication.shared.statusBarOrientation
         switch interfaceOrientation {
@@ -187,22 +129,10 @@ class CameraPreviewView: UIView {
         default:
             videoOrientation = .portrait
         }
-        capture.videoOrientation = videoOrientation
-        if let videoDevicePosition = cameraManager.activeVideoInput?.device.position {
-            let rotation = PreviewMetalView.Rotation(
-                with: interfaceOrientation,
-                videoOrientation: capture.videoOrientation,
-                cameraPosition: videoDevicePosition
-            )
-            metalView.mirroring = (videoDevicePosition == .front)
-            if let rotation = rotation {
-                metalView.rotation = rotation
-            }
-        }
+        previewLayer?.connection?.videoOrientation = videoOrientation
     }
     
     func resetMask(_ image: UIImage?) {
-        metalView.pixelBuffer = nil
         imageMaskView.image = image
         imageMaskView.alpha = 1
         addSubview(imageMaskView)
@@ -235,26 +165,23 @@ class CameraPreviewView: UIView {
     }
     
     func captureDevicePoint(for point: CGPoint) -> CGPoint {
-        guard let texturePoint = metalView.texturePointForView(point: point) else {
-            return CGPoint(x: 0.5, y: 0.5)
+        guard let previewLayer = previewLayer else {
+            return CGPoint(x: width * 0.5, y: height * 0.5)
         }
-        return texturePoint
-    }
-    func clearMeatalPixelBuffer() {
-        metalView.pixelBuffer = nil
-        metalView.flushTextureCache()
+        return previewLayer.captureDevicePointConverted(fromLayerPoint: point)
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        metalView.frame = bounds
         imageMaskView.frame = bounds
         shadeView.frame = bounds
-        filterNameLb.frame = CGRect(x: 0, y: 0, width: width, height: height - 130)
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    deinit {
+        self.observe = nil
     }
 }
 
@@ -323,116 +250,5 @@ class CameraFocusView: UIView {
         super.layoutSubviews()
         rectLayer.frame = bounds
         lineLayer.frame = bounds
-    }
-}
-
-extension PreviewMetalView.Rotation {
-    init?(
-        with interfaceOrientation: UIInterfaceOrientation,
-        videoOrientation: AVCaptureVideoOrientation,
-        cameraPosition: AVCaptureDevice.Position
-    ) {
-        switch videoOrientation {
-        case .portrait:
-            switch interfaceOrientation {
-            case .landscapeRight:
-                if cameraPosition == .front {
-                    self = .rotate90Degrees
-                } else {
-                    self = .rotate270Degrees
-                }
-                
-            case .landscapeLeft:
-                if cameraPosition == .front {
-                    self = .rotate270Degrees
-                } else {
-                    self = .rotate90Degrees
-                }
-                
-            case .portrait:
-                self = .rotate0Degrees
-                
-            case .portraitUpsideDown:
-                self = .rotate180Degrees
-                
-            default: return nil
-            }
-        case .portraitUpsideDown:
-            switch interfaceOrientation {
-            case .landscapeRight:
-                if cameraPosition == .front {
-                    self = .rotate270Degrees
-                } else {
-                    self = .rotate90Degrees
-                }
-                
-            case .landscapeLeft:
-                if cameraPosition == .front {
-                    self = .rotate90Degrees
-                } else {
-                    self = .rotate270Degrees
-                }
-                
-            case .portrait:
-                self = .rotate180Degrees
-                
-            case .portraitUpsideDown:
-                self = .rotate0Degrees
-                
-            default: return nil
-            }
-            
-        case .landscapeRight:
-            switch interfaceOrientation {
-            case .landscapeRight:
-                self = .rotate0Degrees
-                
-            case .landscapeLeft:
-                self = .rotate180Degrees
-                
-            case .portrait:
-                if cameraPosition == .front {
-                    self = .rotate270Degrees
-                } else {
-                    self = .rotate90Degrees
-                }
-                
-            case .portraitUpsideDown:
-                if cameraPosition == .front {
-                    self = .rotate90Degrees
-                } else {
-                    self = .rotate270Degrees
-                }
-                
-            default: return nil
-            }
-            
-        case .landscapeLeft:
-            switch interfaceOrientation {
-            case .landscapeLeft:
-                self = .rotate0Degrees
-                
-            case .landscapeRight:
-                self = .rotate180Degrees
-                
-            case .portrait:
-                if cameraPosition == .front {
-                    self = .rotate90Degrees
-                } else {
-                    self = .rotate270Degrees
-                }
-                
-            case .portraitUpsideDown:
-                if cameraPosition == .front {
-                    self = .rotate270Degrees
-                } else {
-                    self = .rotate90Degrees
-                }
-                
-            default: return nil
-            }
-        @unknown default:
-            fatalError("Unknown orientation.")
-        }
     }
 }

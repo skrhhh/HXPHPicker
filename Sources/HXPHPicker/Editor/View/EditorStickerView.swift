@@ -151,12 +151,9 @@ class EditorStickerView: UIView {
     }
     
     @discardableResult
-    func add(
-        sticker item: EditorStickerItem,
-        isSelected: Bool
-    ) -> EditorStickerItemView {
+    func add(sticker item: EditorStickerItem, isSelected: Bool) -> EditorStickerItemView {
         selectView?.isSelected = false
-        let itemView = EditorStickerItemView(item: item, scale: scale)
+        let itemView = EditorStickerItemView.init(item: item, scale: scale)
         itemView.delegate = self
         var pScale: CGFloat
         if item.text == nil && item.music == nil {
@@ -184,9 +181,6 @@ class EditorStickerView: UIView {
         }else {
             pScale = 1
         }
-        itemView.initialAngle = angle
-        itemView.initialMirrorType = mirrorType
-        
         itemView.superAngle = angle
         itemView.superMirrorType = mirrorType
         var radians = angleRadians()
@@ -294,6 +288,22 @@ class EditorStickerView: UIView {
         currentItemArg = itemView.radian
     }
     
+    func mirrorTransForm(radians: CGFloat) -> CGAffineTransform {
+        let transfrom = CGAffineTransform(scaleX: -1, y: 1)
+        switch radians {
+        case 0:
+            return transfrom
+        case CGFloat.pi / 2, -CGFloat.pi / 2:
+            return transfrom.rotated(by: CGFloat.pi / 2)
+        case CGFloat.pi, -CGFloat.pi:
+            return transfrom.rotated(by: CGFloat.pi)
+        case CGFloat.pi / 2 * 3, -CGFloat.pi / 2 * 3:
+            return transfrom.rotated(by: -CGFloat.pi / 2)
+        default:
+            return transfrom
+        }
+    }
+    
     func angleRadians() -> CGFloat {
         switch angle {
         case 90:
@@ -366,9 +376,7 @@ class EditorStickerView: UIView {
                     centerScale: centerScale,
                     mirrorType: itemView.mirrorType,
                     superMirrorType: itemView.superMirrorType,
-                    superAngel: itemView.superAngle,
-                    initialAngle: itemView.initialAngle,
-                    initialMirrorType: itemView.initialMirrorType
+                    superAngel: itemView.superAngle
                 )
                 datas.append(itemData)
             }
@@ -393,8 +401,6 @@ class EditorStickerView: UIView {
             itemView.mirrorType = itemData.mirrorType
             itemView.superMirrorType = itemData.superMirrorType
             itemView.superAngle = itemData.superAngel
-            itemView.initialAngle = itemData.initialAngle
-            itemView.initialMirrorType = itemData.initialMirrorType
             itemView.update(
                 pinchScale: itemData.pinchScale,
                 rotation: itemData.rotation,
@@ -448,9 +454,7 @@ class EditorStickerView: UIView {
                     angel: itemView.radian,
                     scale: itemView.pinchScale,
                     viewSize: size,
-                    music: music,
-                    initialAngle: itemView.initialAngle,
-                    initialMirrorType: itemView.initialMirrorType
+                    music: music
                 )
                 infos.append(info)
             }
@@ -472,8 +476,6 @@ struct EditorStickerInfo {
     let scale: CGFloat
     let viewSize: CGSize
     let music: EditorStickerInfoMusic?
-    let initialAngle: CGFloat
-    let initialMirrorType: EditorImageResizerView.MirrorType
 }
 struct EditorStickerInfoMusic {
     let fontSizeScale: CGFloat
@@ -497,6 +499,4 @@ struct EditorStickerItemData: Codable {
     let mirrorType: EditorImageResizerView.MirrorType
     let superMirrorType: EditorImageResizerView.MirrorType
     let superAngel: CGFloat
-    let initialAngle: CGFloat
-    let initialMirrorType: EditorImageResizerView.MirrorType
 }

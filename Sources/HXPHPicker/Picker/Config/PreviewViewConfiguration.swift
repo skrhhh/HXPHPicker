@@ -28,22 +28,11 @@ public struct PreviewViewConfiguration {
     /// 选择框配置
     public var selectBox: SelectBoxConfiguration = .init()
     
-    /// 多选模式下，未选择资源时是否禁用完成按钮
-    /// false：默认选择当前预览的资源
-    public var disableFinishButtonWhenNotSelected: Bool = false {
-        didSet {
-            bottomView.disableFinishButtonWhenNotSelected = disableFinishButtonWhenNotSelected
-        }
-    }
-    
     /// 视频播放类型
     public var videoPlayType: PhotoPreviewViewController.PlayType = .normal
     
     /// LivePhoto播放类型
     public var livePhotoPlayType: PhotoPreviewViewController.PlayType = .once
-    
-    /// LivePhoto标记
-    public var livePhotoMark: LivePhotoMark = .init()
     
     /// 单击cell隐藏/显示导航栏时是否播放/暂停视频
     public var singleClickCellAutoPlayVideo: Bool = true
@@ -69,7 +58,7 @@ public struct PreviewViewConfiguration {
     
     public init() {
         PhotoManager.shared.loadNetworkVideoMode = loadNetworkVideoMode
-        var bottomConfig = PickerBottomViewConfiguration()
+        var bottomConfig = PickerBottomViewConfiguration.init()
         bottomConfig.previewButtonHidden = true
         bottomConfig.disableFinishButtonWhenNotSelected = false
         #if HXPICKER_ENABLE_EDITOR
@@ -77,25 +66,5 @@ public struct PreviewViewConfiguration {
         #endif
         bottomConfig.showSelectedView = true
         self.bottomView = bottomConfig
-    }
-}
-
-extension PreviewViewConfiguration {
-    public struct LivePhotoMark {
-        
-        var allowShow: Bool = true
-        
-        var blurStyle: UIBlurEffect.Style = .extraLight
-        var blurDarkStyle: UIBlurEffect.Style = .dark
-        
-        var imageColor: UIColor = "#666666".color
-        var textColor: UIColor = "#666666".color
-        
-        var imageDarkColor: UIColor = "#ffffff".color
-        var textDarkColor: UIColor = "#ffffff".color
-        
-        public init() {
-            
-        }
     }
 }

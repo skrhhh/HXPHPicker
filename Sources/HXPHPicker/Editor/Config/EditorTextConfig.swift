@@ -1,5 +1,5 @@
 //
-//  EditorTextConfiguration.swift
+//  EditorTextConfig.swift
 //  HXPHPicker
 //
 //  Created by Slience on 2021/8/16.
@@ -7,7 +7,7 @@
 
 import UIKit
 
-public struct EditorTextConfiguration {
+public struct EditorTextConfig {
     /// 文本颜色数组
     public var colors: [String] = PhotoTools.defaultColors()
     /// 确定按钮背景颜色、文本光标颜色

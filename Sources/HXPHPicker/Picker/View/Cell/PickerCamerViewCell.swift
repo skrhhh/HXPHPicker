@@ -20,7 +20,7 @@ class PickerCamerViewCell: UICollectionViewCell {
         return imageView
     }()
     
-    var config: PhotoListConfiguration.CameraCell? {
+    var config: PhotoListCameraCellConfiguration? {
         didSet {
             configProperty()
         }
@@ -82,7 +82,7 @@ class PickerCamerViewCell: UICollectionViewCell {
                 self.startSession()
             }else {
                 PhotoTools.showNotCameraAuthorizedAlert(
-                    viewController: self.viewController
+                    viewController: self.viewController()
                 )
             }
         }
@@ -114,7 +114,6 @@ class PickerCamerViewCell: UICollectionViewCell {
         }
     }
     deinit {
-        captureView.removeSampleBufferDelegate()
         stopSession()
     }
 }

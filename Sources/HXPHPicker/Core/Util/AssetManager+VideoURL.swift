@@ -71,11 +71,7 @@ public extension AssetManager {
     ) {
         asset.checkAdjustmentStatus { (isAdjusted) in
             if isAdjusted {
-                self.requestAVAsset(
-                    for: asset,
-                       iCloudHandler: nil,
-                       progressHandler: nil
-                ) { (result) in
+                self.requestAVAsset(for: asset, iCloudHandler: nil, progressHandler: nil) { (result) in
                     switch result {
                     case .success(let avResult):
                         let avAsset = avResult.avAsset
@@ -132,7 +128,7 @@ public extension AssetManager {
                     return
                 }
                 let videoURL = fileURL
-                let options = PHAssetResourceRequestOptions()
+                let options = PHAssetResourceRequestOptions.init()
                 options.isNetworkAccessAllowed = true
                 PHAssetResourceManager.default().writeData(
                     for: videoResource,

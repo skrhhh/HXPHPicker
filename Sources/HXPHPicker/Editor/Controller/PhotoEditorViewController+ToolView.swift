@@ -41,9 +41,9 @@ extension PhotoEditorViewController: EditorToolViewDelegate {
             deselectedDraw()
             imageView.deselectedSticker()
             presentText()
-        case .cropSize:
+        case .cropping:
             disableImageSubView()
-            pState = .cropping
+            setState(.cropping)
             imageView.startCropping(true)
             croppingAction()
         case .mosaic:
@@ -62,12 +62,10 @@ extension PhotoEditorViewController: EditorToolViewDelegate {
                 hiddenMosaicToolView()
             }
         case .filter:
-            deselectedDraw()
             disableImageSubView()
             isFilter = true
             hidenTopView()
             showFilterView()
-            imageView.canLookOriginal = true
         default:
             break
         }

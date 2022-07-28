@@ -8,7 +8,7 @@
 import UIKit
 import Photos
 
-extension PHAssetCollection: HXPickerCompatible {
+public extension PHAssetCollection {
     
     /// 是否相机胶卷
     var isCameraRoll: Bool {
@@ -24,11 +24,5 @@ extension PHAssetCollection: HXPickerCompatible {
         }else {
             return assetCollectionSubtype == .smartAlbumUserLibrary
         }
-    }
-}
-
-public extension HXPickerWrapper where Base: PHAssetCollection {
-    var isCameraRoll: Bool {
-        base.isCameraRoll
     }
 }

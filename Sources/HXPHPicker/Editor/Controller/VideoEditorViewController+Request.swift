@@ -25,18 +25,16 @@ extension VideoEditorViewController {
             deliveryMode: .highQualityFormat
         ) { [weak self] (photoAsset, requestID) in
             self?.assetRequestID = requestID
-            loadingView?.mode = .circleProgress
-            loadingView?.text = "正在同步iCloud".localized + "..."
+            loadingView?.updateText(text: "正在同步iCloud".localized + "...")
         } progressHandler: { (photoAsset, progress) in
             if progress > 0 {
-                loadingView?.progress = CGFloat(progress)
+                loadingView?.updateText(text: "正在同步iCloud".localized + "(" + String(Int(progress * 100)) + "%)")
             }
         } success: { [weak self] (photoAsset, avAsset, info) in
             ProgressHUD.hide(forView: self?.view, animated: false)
             self?.pAVAsset = avAsset
-            self?.avassetLoadValuesAsynchronously()
-//            self?.reqeustAssetCompletion = true
-//            self?.assetRequestComplete()
+            self?.reqeustAssetCompletion = true
+            self?.assetRequestComplete()
         } failure: { [weak self] (photoAsset, info, error) in
             if let info = info, !info.isCancel {
                 ProgressHUD.hide(forView: self?.view, animated: false)
@@ -62,96 +60,47 @@ extension VideoEditorViewController {
     }
     
     func assetRequestComplete() {
-        let image = PhotoTools.getVideoThumbnailImage(avAsset: avAsset, atTime: 0.1)
-        filterImageHandler(image: image)
-        videoSize = image?.size ?? view.size
-        coverImage = image
-        videoView.setAVAsset(avAsset, coverImage: image ?? .init())
+        videoSize = PhotoTools.getVideoThumbnailImage(avAsset: avAsset, atTime: 0.1)?.size ?? view.size
+        if let stickerData = editResult?.stickerData {
+            let playerFrame: CGRect
+            if UIDevice.isPad {
+                playerFrame = PhotoTools.transformImageSize(videoSize, toViewSize: view.size, directions: [.horizontal])
+            }else {
+                playerFrame = PhotoTools.transformImageSize(videoSize, to: view)
+            }
+            playerView.stickerView.setStickerData(
+                stickerData: stickerData,
+                viewSize: playerFrame.size
+            )
+            musicView.showLyricButton.isSelected = stickerData.showLyric
+            if stickerData.showLyric {
+                otherMusic = stickerData.items[stickerData.LyricIndex].item.music
+            }
+        }
+        playerView.avAsset = avAsset
+        playerView.configAsset()
         cropView.avAsset = avAsset
         if orientationDidChange {
             setCropViewFrame()
         }
-        if !videoInitializeCompletion {
-            setEditedSizeData()
-            videoInitializeCompletion = true
-        }
-        if transitionCompletion {
-            setAsset()
-        }
-    }
-    
-    func setEditedSizeData() {
-        if let sizeData = editResult?.sizeData {
-            videoView.setVideoEditedData(editedData: sizeData)
-            brushColorView.canUndo = videoView.canUndoDraw
-            if let stickerData = sizeData.stickerData {
-                musicView.showLyricButton.isSelected = stickerData.showLyric
-                if stickerData.showLyric {
-                    otherMusic = stickerData.items[stickerData.LyricIndex].item.music
-                }
+        if state == .cropping {
+            pState = .normal
+            if playerView.playerLayer.isReadyForDisplay {
+                firstPlay = false
+                croppingAction()
             }
+        }else {
+            setPlayerViewFrame()
         }
-    }
-    
-    func setAsset() {
-        if setAssetCompletion {
-            return
-        }
-        videoView.playerView.configAsset()
         if let editResult = editResult {
-            hasOriginalSound = editResult.hasOriginalSound
-            if hasOriginalSound {
-                videoVolume = editResult.videoSoundVolume
-            }else {
-                videoView.playerView.player.volume = 0
-            }
-            volumeView.originalVolume = videoVolume
-            musicView.originalSoundButton.isSelected = hasOriginalSound
+            playerView.player.volume = editResult.videoSoundVolume
+            musicView.originalSoundButton.isSelected = editResult.videoSoundVolume > 0
             if let audioURL = editResult.backgroundMusicURL {
                 backgroundMusicPath = audioURL.path
                 musicView.backgroundButton.isSelected = true
                 PhotoManager.shared.playMusic(filePath: audioURL.path) {
                 }
-                videoView.imageResizerView.imageView.stickerView.audioView?.contentView.startTimer()
                 backgroundMusicVolume = editResult.backgroundMusicVolume
-                volumeView.musicVolume = backgroundMusicVolume
-            }
-            if !orientationDidChange && editResult.cropData != nil {
-                videoView.playerView.resetPlay()
-                startPlayTimer()
-            }
-            if let videoFilter = editResult.sizeData?.filter,
-               config.filter.isLoadLastFilter,
-               videoFilter.index < config.filter.infos.count {
-                let filterInfo = config.filter.infos[videoFilter.index]
-                videoView.playerView.setFilter(filterInfo, value: videoFilter.value)
-            }
-            videoView.imageResizerView.videoFilter = editResult.sizeData?.filter
-        }
-        setAssetCompletion = true
-    }
-    
-    func filterImageHandler(image: UIImage?) {
-        guard let image = image else {
-            return
-        }
-        var hasFilter = false
-        var thumbnailImage: UIImage?
-        for option in config.toolView.toolOptions where option.type == .filter {
-            hasFilter = true
-        }
-        if hasFilter {
-            DispatchQueue.global().async {
-                thumbnailImage = image.scaleToFillSize(
-                    size: CGSize(width: 80, height: 80),
-                    equalRatio: true
-                )
-                if thumbnailImage == nil {
-                    thumbnailImage = image
-                }
-                DispatchQueue.main.async {
-                    self.filterView.image = thumbnailImage
-                }
             }
         }
     }
@@ -174,8 +123,7 @@ extension VideoEditorViewController {
                 with: videoURL
             ) { [weak self] (progress, task) in
                 if progress > 0 {
-                    self?.loadingView?.mode = .circleProgress
-                    self?.loadingView?.progress = CGFloat(progress)
+                    self?.loadingView?.updateText(text: "视频下载中".localized + "(" + String(Int(progress * 100)) + "%)")
                 }
             } completionHandler: { [weak self] (url, error, _) in
                 if let url = url {
@@ -186,7 +134,7 @@ extension VideoEditorViewController {
                     #endif
                     self?.loadingView = nil
                     ProgressHUD.hide(forView: self?.view, animated: false)
-                    self?.pAVAsset = AVAsset(url: url)
+                    self?.pAVAsset = AVAsset.init(url: url)
                     self?.avassetLoadValuesAsynchronously()
                 }else {
                     if let error = error as NSError?, error.code == NSURLErrorCancelled {
@@ -201,17 +149,10 @@ extension VideoEditorViewController {
     }
     
     func avassetLoadValuesAsynchronously() {
-        avAsset.loadValuesAsynchronously(
-            forKeys: ["duration"]
-        ) { [weak self] in
-            guard let self = self else { return }
+        avAsset.loadValuesAsynchronously(forKeys: ["duration"]) { [weak self] in
             DispatchQueue.main.async {
-                if self.avAsset.statusOfValue(forKey: "duration", error: nil) != .loaded {
-                    self.assetRequestFailure()
-                    return
-                }
-                self.reqeustAssetCompletion = true
-                self.assetRequestComplete()
+                self?.reqeustAssetCompletion = true
+                self?.assetRequestComplete()
             }
         }
     }

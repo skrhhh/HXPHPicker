@@ -51,49 +51,27 @@ public final class PhotoManager: NSObject {
     /// 加载指示器类型
     var indicatorType: BaseConfiguration.IndicatorType = .circle
     
-    #if HXPICKER_ENABLE_PICKER
-    /// 加载网络视频方式
-    public var loadNetworkVideoMode: PhotoAsset.LoadNetworkVideoMode = .download
-    
-    var isCacheCameraAlbum: Bool = false {
-        didSet {
-            if isCacheCameraAlbum == oldValue {
-                return
-            }
-            registerPhotoChangeObserver()
-        }
-    }
-    var didRegisterObserver: Bool = false
-    var firstLoadAssets: Bool = true
-    var cameraAlbumResult: PHFetchResult<PHAsset>?
-    var cameraAlbumResultOptions: PickerAssetOptions?
-    var thumbnailLoadMode: ThumbnailLoadMode = .complete
-    #endif
-    
-    #if HXPICKER_ENABLE_PICKER || HXPICKER_ENABLE_EDITOR
     lazy var downloadSession: URLSession = {
         let session = URLSession.init(configuration: .default, delegate: self, delegateQueue: nil)
         return session
     }()
+    
+    lazy var audioSession: AVAudioSession = {
+        let session = AVAudioSession.sharedInstance()
+        return session
+    }()
+    
+    var audioPlayer: AVAudioPlayer?
+    var audioPlayFinish: (() -> Void)?
+    
     var downloadTasks: [String: URLSessionDownloadTask] = [:]
     var downloadCompletions: [String: (URL?, Error?, Any?) -> Void] = [:]
     var downloadProgresss: [String: (Double, URLSessionDownloadTask) -> Void] = [:]
     var downloadFileURLs: [String: URL] = [:]
     var downloadExts: [String: Any] = [:]
-    #endif
     
-    #if HXPICKER_ENABLE_EDITOR
-    lazy var audioSession: AVAudioSession = {
-        let session = AVAudioSession.sharedInstance()
-        return session
-    }()
-    var audioPlayer: AVAudioPlayer?
-    var audioPlayFinish: (() -> Void)?
-    #endif
-    
-    #if HXPICKER_ENABLE_PICKER || HXPICKER_ENABLE_CAMERA
     var cameraPreviewImage: UIImage? = PhotoTools.getCameraPreviewImage()
-    var sampleBuffer: CMSampleBuffer?
+    
     func saveCameraPreview() {
         if let image = cameraPreviewImage {
             DispatchQueue.global().async {
@@ -101,9 +79,6 @@ public final class PhotoManager: NSObject {
             }
         }
     }
-    #endif
-    
-    let uuid: String = UUID().uuidString
     
     private override init() {
         super.init()
@@ -120,52 +95,20 @@ public final class PhotoManager: NSObject {
                 self.bundle = Bundle.main
             }
             #else
-            let bundle = Bundle(for: HXPHPicker.self)
+            let bundle = Bundle.init(for: HXPHPicker.self)
             var path = bundle.path(forResource: "HXPHPicker", ofType: "bundle")
             if path == nil {
-                let associateBundleURL = Bundle.main.url(forResource: "Frameworks", withExtension: nil)
-                if let url = associateBundleURL?
-                    .appendingPathComponent("HXPHPicker")
-                    .appendingPathExtension("framework") {
-                    let associateBunle = Bundle(url: url)
+                var associateBundleURL = Bundle.main.url(forResource: "Frameworks", withExtension: nil)
+                if associateBundleURL != nil {
+                    associateBundleURL = associateBundleURL?.appendingPathComponent("HXPHPicker")
+                    associateBundleURL = associateBundleURL?.appendingPathExtension("framework")
+                    let associateBunle = Bundle.init(url: associateBundleURL!)
                     path = associateBunle?.path(forResource: "HXPHPicker", ofType: "bundle")
                 }
             }
-            if let path = path {
-                self.bundle = Bundle(path: path)
-            }else {
-                self.bundle = Bundle.main
-            }
+            self.bundle = (path != nil) ? Bundle.init(path: path!) : Bundle.main
             #endif
         }
         return self.bundle
     }
 }
-
-#if HXPICKER_ENABLE_PICKER
-extension NSNotification.Name {
-    static let ThumbnailLoadModeDidChange: NSNotification.Name = .init("ThumbnailLoadModeDidChange")
-}
-extension PhotoManager {
-    enum ThumbnailLoadMode {
-        case simplify
-        case complete
-    }
-    func thumbnailLoadModeDidChange(
-        _ mode: ThumbnailLoadMode
-    ) {
-        if thumbnailLoadMode == mode {
-            return
-        }
-        thumbnailLoadMode = mode
-//        if !needReload && !forceReload {
-//            return
-//        }
-//        NotificationCenter.default.post(
-//            name: .ThumbnailLoadModeDidChange,
-//            object: nil,
-//            userInfo: ["needReload": forceReload ? true : needReload]
-//        )
-    }
-}
-#endif

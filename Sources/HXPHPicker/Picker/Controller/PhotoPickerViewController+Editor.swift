@@ -26,7 +26,6 @@ extension PhotoPickerViewController: PhotoEditorViewControllerDelegate {
         }
         if !photoAsset.isSelected {
             let cell = getCell(for: photoAsset)
-            cell?.isRequestDirectly = true
             cell?.photoAsset = photoAsset
             if picker.addedPhotoAsset(photoAsset: photoAsset) {
                 updateCellSelectedTitle()
@@ -53,7 +52,6 @@ extension PhotoPickerViewController: PhotoEditorViewControllerDelegate {
             return
         }
         let cell = getCell(for: photoAsset)
-        cell?.isRequestDirectly = true
         cell?.photoAsset = photoAsset
         if !photoAsset.isSelected {
             if picker.addedPhotoAsset(photoAsset: photoAsset) {
@@ -106,33 +104,6 @@ extension PhotoPickerViewController: PhotoEditorViewControllerDelegate {
     }
     public func photoEditorViewController(didCancel photoEditorViewController: PhotoEditorViewController) {
         
-    }
-    
-    public func photoEditorViewController(
-        transitionPreviewImage photoEditorViewController: PhotoEditorViewController
-    ) -> UIImage? {
-        guard let photoAsset = photoEditorViewController.photoAsset else {
-            return nil
-        }
-        return getCell(for: photoAsset)?.photoView.image
-    }
-    
-    public func photoEditorViewController(
-        transitioBegenPreviewView photoEditorViewController: PhotoEditorViewController
-    ) -> UIView? {
-        guard let photoAsset = photoEditorViewController.photoAsset else {
-            return nil
-        }
-        return getCell(for: photoAsset)
-    }
-    
-    public func photoEditorViewController(
-        transitioEndPreviewView photoEditorViewController: PhotoEditorViewController
-    ) -> UIView? {
-        guard let photoAsset = photoEditorViewController.photoAsset else {
-            return nil
-        }
-        return getCell(for: photoAsset)
     }
 }
 // MARK: VideoEditorViewControllerDelegate
@@ -259,7 +230,6 @@ extension PhotoPickerViewController: VideoEditorViewControllerDelegate {
         }
         if !photoAsset.isSelected {
             let cell = getCell(for: photoAsset)
-            cell?.isRequestDirectly = true
             cell?.photoAsset = photoAsset
             if picker.addedPhotoAsset(photoAsset: photoAsset) {
                 updateCellSelectedTitle()
@@ -295,7 +265,6 @@ extension PhotoPickerViewController: VideoEditorViewControllerDelegate {
         }
         if beforeHasEdit {
             let cell = getCell(for: photoAsset)
-            cell?.isRequestDirectly = true
             cell?.photoAsset = photoAsset
         }
         if !photoAsset.isSelected {
@@ -304,33 +273,6 @@ extension PhotoPickerViewController: VideoEditorViewControllerDelegate {
             }
             bottomView.updateFinishButtonTitle()
         }
-    }
-    
-    public func videoEditorViewController(
-        transitionPreviewImage videoEditorViewController: VideoEditorViewController
-    ) -> UIImage? {
-        guard let photoAsset = videoEditorViewController.photoAsset else {
-            return nil
-        }
-        return getCell(for: photoAsset)?.photoView.image
-    }
-    
-    public func videoEditorViewController(
-        transitioBegenPreviewView videoEditorViewController: VideoEditorViewController
-    ) -> UIView? {
-        guard let photoAsset = videoEditorViewController.photoAsset else {
-            return nil
-        }
-        return getCell(for: photoAsset)
-    }
-    
-    public func videoEditorViewController(
-        transitioEndPreviewView videoEditorViewController: VideoEditorViewController
-    ) -> UIView? {
-        guard let photoAsset = videoEditorViewController.photoAsset else {
-            return nil
-        }
-        return getCell(for: photoAsset)
     }
 }
 #endif

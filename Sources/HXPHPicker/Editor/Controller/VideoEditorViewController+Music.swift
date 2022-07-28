@@ -9,11 +9,8 @@ import UIKit
 
 // MARK: VideoEditorMusicViewDelegate
 extension VideoEditorViewController: VideoEditorMusicViewDelegate {
-    func removeAudioSticker() {
-        videoView.imageResizerView.imageView.stickerView.removeAudioView()
-    }
     func musicView(_ musicView: VideoEditorMusicView, didShowLyricButton isSelected: Bool, music: VideoEditorMusic?) {
-        removeAudioSticker()
+        playerView.stickerView.removeAudioView()
         if !isSelected {
             return
         }
@@ -21,21 +18,21 @@ extension VideoEditorViewController: VideoEditorMusicViewDelegate {
             image: UIImage(),
             imageData: nil,
             text: nil,
-            music: music ?? otherMusic
+            music: music ?? otherMusic,
+            videoSize: playerFrame.size
         )
         if item.music == nil {
             return
         }
-        videoView.addSticker(item: item, isSelected: false)
+        playerView.stickerView.add(sticker: item, isSelected: false)
     }
     func musicView(_ musicView: VideoEditorMusicView, didSelectMusic audioPath: String?) {
         backgroundMusicPath = audioPath
         otherMusic = nil
-        PhotoManager.shared.changeAudioPlayerVolume(backgroundMusicVolume)
     }
     func musicView(deselectMusic musicView: VideoEditorMusicView) {
         backgroundMusicPath = nil
-        removeAudioSticker()
+        playerView.stickerView.removeAudioView()
     }
     func musicView(didSearchButton musicView: VideoEditorMusicView) {
         searchMusicView.searchView.becomeFirstResponder()
@@ -44,29 +41,11 @@ extension VideoEditorViewController: VideoEditorMusicViewDelegate {
             self.setSearchMusicViewFrame()
         }
     }
-    func musicView(didVolumeButton musicView: VideoEditorMusicView) {
-        showVolumeView()
-    }
     func musicView(_ musicView: VideoEditorMusicView, didOriginalSoundButtonClick isSelected: Bool) {
-        hasOriginalSound = isSelected
         if isSelected {
-            videoView.playerView.player.volume = videoVolume
+            playerView.player.volume = 1
         }else {
-            videoView.playerView.player.volume = 0
-        }
-    }
-    func showVolumeView() {
-        isShowVolume = true
-        UIView.animate(withDuration: 0.25) {
-            self.setVolumeViewFrame()
-            self.musicView.alpha = 0
-        }
-    }
-    func hiddenVolumeView() {
-        isShowVolume = false
-        UIView.animate(withDuration: 0.25) {
-            self.setVolumeViewFrame()
-            self.musicView.alpha = 1
+            playerView.player.volume = 0
         }
     }
 }
@@ -123,16 +102,6 @@ extension VideoEditorViewController: VideoEditorSearchMusicViewDelegate {
                 self.searchMusicView.deselect()
             }
             self.searchMusicView.clearData()
-        }
-    }
-}
-
-// MARK: VideoEditorVolumeViewDelegate
-extension VideoEditorViewController: VideoEditorVolumeViewDelegate {
-    func volumeView(didChanged volumeView: VideoEditorVolumeView) {
-        backgroundMusicVolume = volumeView.musicVolume
-        if hasOriginalSound {
-            videoVolume = volumeView.originalVolume
         }
     }
 }

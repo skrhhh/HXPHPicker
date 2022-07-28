@@ -12,19 +12,16 @@ public extension AssetManager {
     typealias ImageDataResultHandler = (Result<ImageDataResult, ImageDataError>) -> Void
     
     struct ImageDataResult {
-        public let imageData: Data
-        public let dataUTI: String?
-        public let imageOrientation: UIImage.Orientation
-        public let info: [AnyHashable: Any]?
+        let imageData: Data
+        let dataUTI: String
+        let imageOrientation: UIImage.Orientation
+        let info: [AnyHashable: Any]?
     }
     
     struct ImageDataError: Error {
-        public let info: [AnyHashable: Any]?
-        public let error: AssetError
+        let info: [AnyHashable: Any]?
+        let error: AssetError
     }
-}
-
-public extension AssetManager {
     
     /// 请求imageData，如果资源在iCloud上会自动请求下载iCloud上的资源 注意处理 HEIC格式
     /// - Parameters:
@@ -94,7 +91,7 @@ public extension AssetManager {
         progressHandler: PHAssetImageProgressHandler?,
         resultHandler: @escaping ImageDataResultHandler
     ) -> PHImageRequestID {
-        let options = PHImageRequestOptions()
+        let options = PHImageRequestOptions.init()
         options.version = version
         options.resizeMode = .fast
         options.isNetworkAccessAllowed = isNetworkAccessAllowed
@@ -147,7 +144,7 @@ public extension AssetManager {
                     .success(
                         .init(
                             imageData: imageData,
-                            dataUTI: dataUTI,
+                            dataUTI: dataUTI!,
                             imageOrientation: imageOrientation,
                             info: info
                         )

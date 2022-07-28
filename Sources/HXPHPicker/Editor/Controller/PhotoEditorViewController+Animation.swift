@@ -32,10 +32,8 @@ extension PhotoEditorViewController {
     
     func showBrushColorView() {
         brushColorView.isHidden = false
-        brushBlockView.isHidden = false
         UIView.animate(withDuration: 0.25) {
             self.brushColorView.alpha = 1
-            self.brushBlockView.alpha = 1
         }
     }
     
@@ -45,14 +43,12 @@ extension PhotoEditorViewController {
         }
         UIView.animate(withDuration: 0.25) {
             self.brushColorView.alpha = 0
-            self.brushBlockView.alpha = 0
         } completion: { (_) in
             guard let option = self.currentToolOption,
                   option.type == .graffiti else {
                 return
             }
             self.brushColorView.isHidden = true
-            self.brushBlockView.isHidden = true
         }
     }
     
@@ -109,7 +105,6 @@ extension PhotoEditorViewController {
         if let option = currentToolOption {
             if option.type == .graffiti {
                 brushColorView.isHidden = false
-                brushBlockView.isHidden = false
             }else if option.type == .mosaic {
                 mosaicToolView.isHidden = false
             }
@@ -123,7 +118,6 @@ extension PhotoEditorViewController {
             if let option = self.currentToolOption {
                 if option.type == .graffiti {
                     self.brushColorView.alpha = 1
-                    self.brushBlockView.alpha = 1
                 }else if option.type == .mosaic {
                     self.mosaicToolView.alpha = 1
                 }
@@ -139,7 +133,6 @@ extension PhotoEditorViewController {
             if let option = self.currentToolOption {
                 if option.type == .graffiti {
                     self.brushColorView.alpha = 0
-                    self.brushBlockView.alpha = 0
                 }else if option.type == .mosaic {
                     self.mosaicToolView.alpha = 0
                 }
@@ -149,7 +142,6 @@ extension PhotoEditorViewController {
                 self.toolView.isHidden = true
                 self.topView.isHidden = true
                 self.brushColorView.isHidden = true
-                self.brushBlockView.isHidden = true
                 self.mosaicToolView.isHidden = true
             }
         }

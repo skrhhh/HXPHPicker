@@ -30,11 +30,13 @@ extension PhotoPickerViewController {
             swipeSelectAutoScroll()
         }
     }
-    
+    // swiftlint:disable cyclomatic_complexity
+    // swiftlint:disable function_body_length
     func changedPanGestureRecognizer(
         panGR: UIPanGestureRecognizer,
-        localPoint: CGPoint
-    ) {
+        localPoint: CGPoint) {
+        // swiftlint:enable cyclomatic_complexity
+        // swiftlint:enable function_body_length
         let lastIndexPath = collectionView.indexPathForItem(at: localPoint)
         if let lastIndex = lastIndexPath?.item,
            let lastIndexPath = lastIndexPath {
@@ -268,9 +270,7 @@ extension PhotoPickerViewController {
                 }
             }else if bottomRect.contains(localPoint) {
                 offsety = self.collectionView.contentOffset.y + margin
-                let maxOffsetY = collectionView.contentSize.height -
-                    collectionView.height +
-                    collectionView.contentInset.bottom
+                let maxOffsetY = collectionView.contentSize.height - collectionView.height + collectionView.contentInset.bottom // swiftlint:disable:this line_length
                 if offsety > maxOffsetY {
                     offsety = maxOffsetY
                 }
@@ -294,14 +294,10 @@ extension PhotoPickerViewController {
         if photoAsset.isSelected != isSelected {
             if isSelected {
                 func addAsset(showTip: Bool) {
-                    resetICloud(for: photoAsset)
                     if pickerController.canSelectAsset(for: photoAsset, showHUD: showTip) {
                         pickerController.addedPhotoAsset(photoAsset: photoAsset)
-                        if let cell = getCell(for: photoAsset) {
-                            cell.updateSelectedState(
-                                isSelected: isSelected,
-                                animated: false
-                            )
+                        if let cell = getCell(for: item) {
+                            cell.updateSelectedState(isSelected: isSelected, animated: false)
                         }
                     }else {
                         showHUD = true
@@ -309,7 +305,7 @@ extension PhotoPickerViewController {
                 }
                 let inICloud = photoAsset.checkICloundStatus(
                     allowSyncPhoto: pickerController.config.allowSyncICloudWhenSelectPhoto,
-                    completion: { _, isSuccess in
+                    completion: { isSuccess in
                     if isSuccess {
                         addAsset(showTip: true)
                     }

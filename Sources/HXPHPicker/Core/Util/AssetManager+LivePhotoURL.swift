@@ -5,7 +5,7 @@
 //  Created by Slience on 2021/1/8.
 //
 
-import UIKit
+import Foundation
 import Photos
 
 public extension AssetManager {

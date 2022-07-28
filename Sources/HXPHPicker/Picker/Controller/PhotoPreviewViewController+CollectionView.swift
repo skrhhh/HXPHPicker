@@ -21,15 +21,13 @@ extension PhotoPreviewViewController: UICollectionViewDataSource {
         let photoAsset = previewAssets[indexPath.item]
         let cell: PhotoPreviewViewCell
         if photoAsset.mediaType == .photo {
-            if photoAsset.mediaSubType == .livePhoto ||
-                photoAsset.mediaSubType == .localLivePhoto {
+            if photoAsset.mediaSubType == .livePhoto {
                 cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: NSStringFromClass(PreviewLivePhotoViewCell.self),
                     for: indexPath
                 ) as! PreviewLivePhotoViewCell
                 let livePhotoCell = cell as! PreviewLivePhotoViewCell
                 livePhotoCell.livePhotoPlayType = config.livePhotoPlayType
-                livePhotoCell.liveMarkConfig = config.livePhotoMark
             }else {
                 cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: NSStringFromClass(PreviewPhotoViewCell.self),
@@ -135,12 +133,6 @@ extension PhotoPreviewViewController: UICollectionViewDelegate {
 
 // MARK: PhotoPreviewViewCellDelegate
 extension PhotoPreviewViewController: PhotoPreviewViewCellDelegate {
-    func cell(requestSucceed cell: PhotoPreviewViewCell) {
-        delegate?.previewViewController(self, requestSucceed: cell.photoAsset)
-    }
-    func cell(requestFailed cell: PhotoPreviewViewCell) {
-        delegate?.previewViewController(self, requestFailed: cell.photoAsset)
-    }
     func cell(singleTap cell: PhotoPreviewViewCell) {
         if navigationController == nil {
             return
@@ -152,8 +144,8 @@ extension PhotoPreviewViewController: PhotoPreviewViewCellDelegate {
         }
         navigationController!.setNavigationBarHidden(statusBarShouldBeHidden, animated: true)
         let currentCell = getCell(for: currentPreviewIndex)
-        currentCell?.statusBarShouldBeHidden = statusBarShouldBeHidden
         let videoCell = currentCell as? PreviewVideoViewCell
+        videoCell?.statusBarShouldBeHidden = statusBarShouldBeHidden
         if !statusBarShouldBeHidden {
             if config.showBottomView {
                 bottomView.isHidden = false
@@ -162,17 +154,11 @@ extension PhotoPreviewViewController: PhotoPreviewViewCellDelegate {
                 currentCell?.scrollContentView.videoView.stopPlay()
             }
             videoCell?.showToolView()
-            if let liveCell = currentCell as? PreviewLivePhotoViewCell {
-                liveCell.showMark()
-            }
         }else {
             if currentCell?.photoAsset.mediaType == .video && config.singleClickCellAutoPlayVideo {
                 currentCell?.scrollContentView.videoView.startPlay()
             }
             videoCell?.hideToolView()
-            if let liveCell = currentCell as? PreviewLivePhotoViewCell {
-                liveCell.hideMark()
-            }
         }
         if config.showBottomView {
             UIView.animate(withDuration: 0.25) {

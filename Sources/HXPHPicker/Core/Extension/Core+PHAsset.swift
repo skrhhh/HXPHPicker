@@ -7,7 +7,7 @@
 
 import Photos
 
-extension PHAsset: HXPickerCompatible {
+public extension PHAsset {
     
     var isImageAnimated: Bool {
         var isAnimated: Bool = false
@@ -38,38 +38,35 @@ extension PHAsset: HXPickerCompatible {
     
     /// 如果在获取到PHAsset之前还未下载的iCloud，之后下载了还是会返回存在
     var inICloud: Bool {
-        if let isCloud = isCloudPlaceholder, isCloud {
-            return true
-        }
         var isICloud = false
-        if mediaType == .image {
-            let options = PHImageRequestOptions()
-            options.isSynchronous = true
-            options.deliveryMode = .fastFormat
-            options.resizeMode = .fast
-            AssetManager.requestImageData(for: self, options: options) { (result) in
-                switch result {
-                case .failure(let error):
-                    if let inICloud = error.info?.inICloud {
-                        isICloud = inICloud
-                    }
-                default:
-                    break
+        var hasICloud = false
+        let options = PHImageRequestOptions()
+        options.isSynchronous = true
+        options.deliveryMode = .fastFormat
+        options.resizeMode = .fast
+        AssetManager.requestImageData(for: self, options: options) { (result) in
+            switch result {
+            case .failure(let error):
+                if let inICloud = error.info?.inICloud {
+                    isICloud = inICloud
+                    hasICloud = true
                 }
+            default:
+                break
             }
-            return isICloud
-        }else {
-            return !isLocallayAvailable
         }
-    }
-    var isCloudPlaceholder: Bool? {
-        if let isICloud = self.value(forKey: "isCloudPlaceholder") as? Bool {
+        if hasICloud {
             return isICloud
         }
-        return nil
+        if mediaType == PHAssetMediaType.video {
+            isICloud = !isLocallayAvailable
+        }
+        return isICloud
     }
+    
     var isLocallayAvailable: Bool {
-        if let isCloud = isCloudPlaceholder, isCloud {
+        if let isICloud = self.value(forKey: "isCloudPlaceholder") as? Bool,
+           isICloud {
             return false
         }
         let resourceArray = PHAssetResource.assetResources(for: self)
@@ -77,12 +74,8 @@ extension PHAsset: HXPickerCompatible {
         return isLocallayAvailable
     }
     
-    @discardableResult
-    func checkAdjustmentStatus(completion: @escaping (Bool) -> Void) -> PHContentEditingInputRequestID {
-        requestContentEditingInput(with: nil) { (input, info) in
-            if let isCancel = info[PHContentEditingInputCancelledKey] as? Int, isCancel == 1 {
-                return
-            }
+    func checkAdjustmentStatus(completion: @escaping (Bool) -> Void) {
+        self.requestContentEditingInput(with: nil) { (input, info) in
             let avAsset = input?.audiovisualAsset
             var isAdjusted: Bool = false
             if let path = avAsset != nil ? avAsset?.description : input?.fullSizeImageURL?.path {
@@ -92,33 +85,5 @@ extension PHAsset: HXPickerCompatible {
             }
             completion(isAdjusted)
         }
-    }
-}
-
-public extension HXPickerWrapper where Base: PHAsset {
-    
-    var isImageAnimated: Bool {
-        base.isImageAnimated
-    }
-    
-    var isLivePhoto: Bool {
-        base.isLivePhoto
-    }
-    
-    var inICloud: Bool {
-        base.inICloud
-    }
-    var isCloudPlaceholder: Bool? {
-        base.isCloudPlaceholder
-    }
-    var isLocallayAvailable: Bool {
-        base.isLocallayAvailable
-    }
-    
-    @discardableResult
-    func checkAdjustmentStatus(
-        completion: @escaping (Bool) -> Void
-    ) -> PHContentEditingInputRequestID {
-        base.checkAdjustmentStatus(completion: completion)
     }
 }

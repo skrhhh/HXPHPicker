@@ -22,9 +22,9 @@ extension PhotoPickerView: PhotoPreviewViewControllerDelegate {
         )
         previewVC.selectedAssetArray = manager.selectedAssetArray
         previewVC.isOriginal = isOriginal
-        previewVC.previewViewController?.delegate = self
+        previewVC.previewViewController()?.delegate = self
         previewVC.autoDismiss = false
-        viewController?.present(previewVC, animated: animated)
+        viewController()?.present(previewVC, animated: animated)
     }
     
     func previewViewController(didFinishButton previewController: PhotoPreviewViewController) {
@@ -47,36 +47,6 @@ extension PhotoPickerView: PhotoPreviewViewControllerDelegate {
         self.isOriginal = isOriginal
         delegate?.photoPickerView(self, previewDidOriginalButton: isOriginal)
     }
-    
-    #if HXPICKER_ENABLE_EDITOR
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        shouldEditPhotoAsset photoAsset: PhotoAsset,
-        editorConfig: PhotoEditorConfiguration
-    ) -> Bool {
-        if let shouldEdit = delegate?.photoPickerView(
-            self, shouldEditPhotoAsset: photoAsset,
-            editorConfig: editorConfig
-        ) {
-            return shouldEdit
-        }
-        return true
-    }
-    
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        shouldEditVideoAsset videoAsset: PhotoAsset,
-        editorConfig: VideoEditorConfiguration
-    ) -> Bool {
-        if let shouldEdit = delegate?.photoPickerView(
-            self, shouldEditVideoAsset: videoAsset,
-            editorConfig: editorConfig
-        ) {
-            return shouldEdit
-        }
-        return true
-    }
-    #endif
     
     func previewViewController(
         _ previewController: PhotoPreviewViewController,
@@ -107,13 +77,6 @@ extension PhotoPickerView: PhotoPreviewViewControllerDelegate {
             cell.requestThumbnailImage()
         }
     }
-    
-    func previewViewController(
-        _ previewController: PhotoPreviewViewController,
-        requestSucceed photoAsset: PhotoAsset
-    ) {
-        resetICloud(for: photoAsset)
-    }
 }
 
 extension PhotoPickerView: PhotoPickerControllerDelegate {
@@ -127,7 +90,7 @@ extension PhotoPickerView: PhotoPickerControllerDelegate {
         _ pickerController: PhotoPickerController,
         presentPreviewImageForIndexAt index: Int
     ) -> UIImage? {
-        getCell(for: needOffset ? index + offsetIndex : index)?.photoView.image
+        getCell(for: needOffset ? index + 1 : index)?.photoView.image
     }
     
     /// present 预览时起始的视图，用于获取位置大小。与 presentPreviewFrameForIndexAt 一样
@@ -135,7 +98,7 @@ extension PhotoPickerView: PhotoPickerControllerDelegate {
         _ pickerController: PhotoPickerController,
         presentPreviewViewForIndexAt index: Int
     ) -> UIView? {
-        getCell(for: needOffset ? index + offsetIndex : index)
+        getCell(for: needOffset ? index + 1 : index)
     }
     
     /// dismiss 结束时对应的视图，用于获取位置大小。与 dismissPreviewFrameForIndexAt 一样
@@ -143,7 +106,7 @@ extension PhotoPickerView: PhotoPickerControllerDelegate {
         _ pickerController: PhotoPickerController,
         dismissPreviewViewForIndexAt index: Int
     ) -> UIView? {
-        let toIndex = needOffset ? index + offsetIndex : index
+        let toIndex = needOffset ? index + 1 : index
         if let cell = getCell(for: toIndex) {
             scrollCellToVisibleArea(cell)
             return cell

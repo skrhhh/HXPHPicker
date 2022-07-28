@@ -8,9 +8,7 @@
 import UIKit
 
 /// 需要添加滤镜的原始图片、上一次添加滤镜的图片，value，event
-public typealias PhotoEditorFilterHandler = (CIImage, UIImage?, Float, PhotoEditorFilterInfo.Event) -> CIImage?
-
-public typealias VideoEditorFilterHandler = (CIImage, Float) -> CIImage?
+public typealias PhotoEditorFilterHandler = (UIImage, UIImage?, Float, PhotoEditorFilterInfo.Event) -> UIImage?
 
 public struct PhotoEditorFilterInfo {
     
@@ -27,22 +25,16 @@ public struct PhotoEditorFilterInfo {
     public let defaultValue: Float
     
     /// 滤镜处理器，内部会传入未添加滤镜的图片，返回添加滤镜之后的图片
-    /// 如果为视频编辑器时，处理的是底部滤镜预览的数据
     public let filterHandler: PhotoEditorFilterHandler
-    
-    /// 视频滤镜
-    public let videoFilterHandler: VideoEditorFilterHandler?
     
     public init(
         filterName: String,
         defaultValue: Float = -1,
-        filterHandler: @escaping PhotoEditorFilterHandler,
-        videoFilterHandler: VideoEditorFilterHandler? = nil
+        filterHandler: @escaping PhotoEditorFilterHandler
     ) {
         self.filterName = filterName
         self.defaultValue = defaultValue
         self.filterHandler = filterHandler
-        self.videoFilterHandler = videoFilterHandler
     }
 }
 
@@ -69,9 +61,4 @@ class PhotoEditorFilter: Equatable, Codable {
     ) -> Bool {
         lhs === rhs
     }
-}
-
-struct VideoEditorFilter: Codable {
-    let index: Int
-    let value: Float
 }

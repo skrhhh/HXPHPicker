@@ -1,5 +1,5 @@
 //
-//  Editor+PhotoManager.swift
+//  PhotoManager+Audio.swift
 //  HXPHPicker
 //
 //  Created by Slience on 2021/6/28.

@@ -52,7 +52,7 @@ class PhotoEditorMosaicView: UIView, UIGestureRecognizerDelegate {
     }
     var canUndo: Bool { !mosaicPaths.isEmpty }
     
-    init(mosaicConfig: PhotoEditorConfiguration.Mosaic) {
+    init(mosaicConfig: PhotoEditorConfiguration.MosaicConfig) {
         mosaicLineWidth = mosaicConfig.mosaiclineWidth
         imageWidth = mosaicConfig.smearWidth
         super.init(frame: .zero)
@@ -390,11 +390,6 @@ class PhotoEditorMosaicSmearLayer: CALayer {
     init(data: PhotoEditorMosaicSmearLayerData) {
         self.data = data
         super.init()
-    }
-    
-    override init(layer: Any) {
-        data = .init(rect: .zero, color: .clear)
-        super.init(layer: layer)
     }
     
     required init?(coder: NSCoder) {

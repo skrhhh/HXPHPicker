@@ -10,16 +10,8 @@ import UIKit
 /// 旋转会重置所有编辑效果
 open class PhotoEditorConfiguration: EditorConfiguration {
     
-    /// 编辑之后的图片地址配置，默认在tmp下
-    /// 每次编辑时请设置不同地址，防止之前存在的数据被覆盖
-    /// 如果编辑的是GIF，请设置gif后缀的地址
-    public var imageURLConfig: EditorURLConfig?
-    
     /// 控制画笔、贴图...导出之后清晰程度
     public var scale: CGFloat = 2
-    
-    /// 返回按钮图标
-    public var backButtonImageName: String = "hx_editor_back"
     
     /// 编辑器默认状态
     public var state: PhotoEditorViewController.State = .normal
@@ -43,7 +35,7 @@ open class PhotoEditorConfiguration: EditorConfiguration {
         )
         let crop = EditorToolOptions(
             imageName: "hx_editor_photo_crop",
-            type: .cropSize
+            type: .cropping
         )
         let mosaic = EditorToolOptions(
             imageName: "hx_editor_tools_mosaic",
@@ -56,31 +48,48 @@ open class PhotoEditorConfiguration: EditorConfiguration {
         return .init(toolOptions: [graffiti, chartlet, text, crop, mosaic, filter])
     }()
     
-    /// 画笔
-    public lazy var brush: EditorBrushConfiguration = .init()
+    /// 画笔颜色数组
+    public lazy var brushColors: [String] = PhotoTools.defaultColors()
+    
+    /// 默认画笔颜色索引
+    public var defaultBrushColorIndex: Int = 2
+    
+    /// 画笔宽度
+    public var brushLineWidth: CGFloat = 5
     
     /// 贴图
-    public lazy var chartlet: EditorChartletConfiguration = .init()
+    public lazy var chartlet: EditorChartletConfig = .init()
     
     /// 文本
-    public lazy var text: EditorTextConfiguration = .init()
+    public lazy var text: EditorTextConfig = .init()
     
     /// 裁剪配置
-    public lazy var cropping: EditorCropSizeConfiguration = .init()
+    public lazy var cropping: PhotoCroppingConfiguration = .init()
     
     /// 裁剪确认视图配置
     public lazy var cropConfimView: CropConfirmViewConfiguration = .init()
     
     /// 滤镜配置
-    public lazy var filter: Filter = .init(infos: PhotoTools.defaultFilters())
+    public lazy var filter: FilterConfig = .init(infos: PhotoTools.defaultFilters())
+    
+    public struct FilterConfig {
+        /// 滤镜信息
+        public var infos: [PhotoEditorFilterInfo]
+        /// 滤镜选中颜色
+        public var selectedColor: UIColor
+        public init(
+            infos: [PhotoEditorFilterInfo] = [],
+            selectedColor: UIColor = .systemTintColor
+        ) {
+            self.infos = infos
+            self.selectedColor = selectedColor
+        }
+    }
     
     /// 马赛克配置
-    public lazy var mosaic: Mosaic = .init()
-}
-
-extension PhotoEditorConfiguration {
+    public lazy var mosaic: MosaicConfig = .init()
     
-    public struct Mosaic {
+    public struct MosaicConfig {
         /// 生成马赛克的大小
         public var mosaicWidth: CGFloat = 20
         /// 涂鸦时马赛克的线宽

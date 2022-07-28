@@ -53,12 +53,8 @@ open class AlbumViewCell: UITableViewCell {
     /// 配置
     public var config: AlbumListConfiguration? {
         didSet {
-            guard let config = config else {
-                return
-            }
-            albumNameLb.font = config.albumNameFont
-            photoCountLb.font = config.photoCountFont
-            photoCountLb.isHidden = !config.showPhotoCount
+            albumNameLb.font = config?.albumNameFont
+            photoCountLb.font = config?.photoCountFont
             configColor()
         }
     }
@@ -66,12 +62,9 @@ open class AlbumViewCell: UITableViewCell {
     /// 照片集合
     public var assetCollection: PhotoAssetCollection? {
         didSet {
-            guard let assetCollection = assetCollection else {
-                return
-            }
-            albumNameLb.text = assetCollection.albumName
-            photoCountLb.text = String(assetCollection.count)
-            tickView.isHidden = !assetCollection.isSelected
+            albumNameLb.text = assetCollection?.albumName
+            photoCountLb.text = String(assetCollection!.count)
+            tickView.isHidden = !(assetCollection?.isSelected ?? false)
             requestCoverImage()
         }
     }
@@ -89,7 +82,6 @@ open class AlbumViewCell: UITableViewCell {
     
     /// 获取相册封面图片，重写此方法修改封面图片
     open func requestCoverImage() {
-        cancelRequest()
         requestID = assetCollection?.requestCoverImage(completion: { [weak self] (image, assetCollection, info) in
             guard let self = self else { return }
             if let info = info, info.isCancel { return }
@@ -115,8 +107,8 @@ open class AlbumViewCell: UITableViewCell {
             selectedBgView.backgroundColor = config?.cellSelectedDarkColor
             selectedBackgroundView = selectedBgView
         }else {
-            if let color = config?.cellSelectedColor {
-                selectedBgView.backgroundColor = color
+            if config?.cellSelectedColor != nil {
+                selectedBgView.backgroundColor = config?.cellSelectedColor
                 selectedBackgroundView = selectedBgView
             }else {
                 selectedBackgroundView = nil
@@ -134,16 +126,11 @@ open class AlbumViewCell: UITableViewCell {
         
         albumNameLb.x = albumCoverView.frame.maxX + 10
         albumNameLb.size = CGSize(width: tickView.x - albumNameLb.x - 20, height: 16)
+        albumNameLb.centerY = height / CGFloat(2) - albumNameLb.height / CGFloat(2)
         
-        if let showPhotoCount = config?.showPhotoCount, showPhotoCount {
-            albumNameLb.centerY = height / 2 - albumNameLb.height / 2
-            
-            photoCountLb.x = albumCoverView.frame.maxX + 10
-            photoCountLb.y = albumNameLb.frame.maxY + 5
-            photoCountLb.size = CGSize(width: width - photoCountLb.x - 20, height: 14)
-        }else {
-            albumNameLb.centerY = height / 2
-        }
+        photoCountLb.x = albumCoverView.frame.maxX + 10
+        photoCountLb.y = albumNameLb.frame.maxY + 5
+        photoCountLb.size = CGSize(width: width - photoCountLb.x - 20, height: 14)
         
         bottomLineView.frame = CGRect(x: coverMargin, y: height - 0.5, width: width - coverMargin * 2, height: 0.5)
     }
@@ -174,8 +161,5 @@ open class AlbumViewCell: UITableViewCell {
     }
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    deinit {
-        cancelRequest()
     }
 }
