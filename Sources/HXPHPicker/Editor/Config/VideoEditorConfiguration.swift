@@ -18,6 +18,9 @@ open class VideoEditorConfiguration: EditorConfiguration {
     /// 视频导出的地址，默认在tmp下
     public var videoExportURL: URL?
     
+    /// 视频导出是否需要加载框
+    public var videoExportNeedProgressHub: Bool = true
+    
     /// 编辑控制器的默认状态
     public var defaultState: VideoEditorViewController.State = .normal
     

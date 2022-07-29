@@ -12,6 +12,9 @@ import Photos
 open class VideoEditorViewController: BaseViewController {
     public weak var delegate: VideoEditorViewControllerDelegate?
     
+    /// 导出计时器
+    public var exportTimer: Timer?
+    
     /// 当前编辑的AVAsset
     public var avAsset: AVAsset! { pAVAsset }
     

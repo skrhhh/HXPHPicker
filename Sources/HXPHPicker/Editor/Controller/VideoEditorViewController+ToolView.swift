@@ -42,16 +42,31 @@ extension VideoEditorViewController: EditorToolViewDelegate {
         }
         if hasAudio || timeRang != .zero || hasSticker {
             let stickerInfos = playerView.stickerView.getStickerInfo()
-            ProgressHUD.showLoading(
-                addedTo: view,
-                text: "视频导出中".localized,
-                animated: true
-            )
-            exportVideoURL(
-                timeRang: timeRang,
-                hasSticker: hasSticker,
-                stickerInfos: stickerInfos
-            )
+            config.videoExportNeedProgressHub = false
+            if config.videoExportNeedProgressHub {
+                ProgressHUD.showLoading(
+                    addedTo: view,
+                    text: "视频导出中".localized,
+                    animated: true
+                )
+            }
+            
+            let vc = EditProcessingViewller()
+            vc.modalPresentationStyle = .fullScreen
+            let generator = AVAssetImageGenerator(asset: pAVAsset)
+            generator.appliesPreferredTrackTransform = true
+            let time = CMTimeMakeWithSeconds(0.0,preferredTimescale: 600)
+            var actualTime:CMTime = CMTimeMake(value: 0,timescale: 0)
+            let imageRef:CGImage = try! generator.copyCGImage(at: time, actualTime: &actualTime)
+            let frameImg = UIImage(cgImage: imageRef)
+            vc.coverView.image = frameImg
+            self.navigationController?.present(vc, animated: true){
+                self.exportVideoURL(
+                    timeRang: timeRang,
+                    hasSticker: hasSticker,
+                    stickerInfos: stickerInfos, vc: vc
+                )
+            }
             return
         }
         delegate?.videoEditorViewController(didFinishWithUnedited: self)
@@ -60,8 +75,24 @@ extension VideoEditorViewController: EditorToolViewDelegate {
     func exportVideoURL(
         timeRang: CMTimeRange,
         hasSticker: Bool,
-        stickerInfos: [EditorStickerInfo]
+        stickerInfos: [EditorStickerInfo],
+        vc: EditProcessingViewller
     ) {
+        // initialize timer
+        self.exportTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
+            // Get Progress
+            if let progress = self.exportSession?.progress {
+                if (progress < 0.99) {
+                    let dict: [String: Float] = ["progress": progress]
+                    NotificationCenter.default.post(name: Notification.Name("exportProgress"), object: nil, userInfo: dict)
+                    let progressInt = Int(progress*100)
+                    vc.progress = progressInt
+                }else{
+                    self.dismiss(animated: true)
+                }
+            }
+        }
+        
         DispatchQueue.global().async {
             var audioURL: URL?
             if let musicPath = self.backgroundMusicPath {
@@ -77,14 +108,15 @@ extension VideoEditorViewController: EditorToolViewDelegate {
                 originalAudioVolume: self.playerView.player.volume,
                 exportPreset: self.config.exportPreset,
                 videoQuality: self.config.videoQuality
-            ) {  [weak self] videoURL, error in
-                if let videoURL = videoURL {
-                    self?.editFinishCallBack(videoURL)
-                    self?.backAction()
-                }else {
-                    self?.showErrorHUD()
+            )  {  [weak self] videoURL, error in
+                    self?.exportTimer?.invalidate()
+                    if let videoURL = videoURL {
+                        self?.editFinishCallBack(videoURL)
+                        self?.backAction()
+                    }else {
+                        self?.showErrorHUD()
+                    }
                 }
-            }
         }
     }
     func showErrorHUD() {
