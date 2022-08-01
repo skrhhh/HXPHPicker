@@ -11,13 +11,13 @@ import CommonCrypto
 
 extension String: HXPickerCompatibleValue {
     
-    var localized: String { Bundle.localizedString(for: self) }
+    public var localized: String { Bundle.localizedString(for: self) }
     
-    var color: UIColor { UIColor.init(hexString: self) }
+    public var color: UIColor { UIColor.init(hexString: self) }
     
-    var image: UIImage? { UIImage.image(for: self) }
+    public var image: UIImage? { UIImage.image(for: self) }
     
-    var lrc: String? {
+    public var lrc: String? {
         var lrcString: String?
         if let bundle = PhotoManager.shared.bundle,
            let path = bundle.path(forResource: "musics", ofType: nil) {
@@ -25,18 +25,18 @@ extension String: HXPickerCompatibleValue {
         }
         return lrcString
     }
-    var md5: String {
+    public var md5: String {
         guard let data = data(using: .utf8) else {
             return self
         }
-
+        
         let message = data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
             return [UInt8](bytes)
         }
-
+        
         let MD5Calculator = MD5(message)
         let MD5Data = MD5Calculator.calculate()
-
+        
         var MD5String = String()
         for c in MD5Data {
             MD5String += String(format: "%02x", c)
@@ -44,7 +44,7 @@ extension String: HXPickerCompatibleValue {
         return MD5String
     }
     
-    static func fileName(suffix: String) -> String {
+    static public func fileName(suffix: String) -> String {
         var uuid = UUID().uuidString
         uuid = uuid.replacingOccurrences(of: "-", with: "").lowercased()
         var fileName = uuid
@@ -55,7 +55,7 @@ extension String: HXPickerCompatibleValue {
         return suffix.isEmpty ? fileName.md5 : fileName.md5 + "." + suffix
     }
     
-    func size(ofAttributes attributes: [NSAttributedString.Key: Any], maxWidth: CGFloat, maxHeight: CGFloat) -> CGSize {
+    public func size(ofAttributes attributes: [NSAttributedString.Key: Any], maxWidth: CGFloat, maxHeight: CGFloat) -> CGSize {
         hx.size(
             ofAttributes: attributes,
             maxWidth: maxWidth,
@@ -68,7 +68,7 @@ extension String: HXPickerCompatibleValue {
     ///   - size: 字体大小
     ///   - maxHeight: 最大高度
     /// - Returns: 字符串宽度
-    func width(ofSize size: CGFloat, maxHeight: CGFloat) -> CGFloat {
+    public func width(ofSize size: CGFloat, maxHeight: CGFloat) -> CGFloat {
         hx.width(
             ofSize: size,
             maxHeight: maxHeight
@@ -80,7 +80,7 @@ extension String: HXPickerCompatibleValue {
     ///   - font: 字体
     ///   - maxHeight: 最大高度
     /// - Returns: 字符串宽度
-    func width(ofFont font: UIFont, maxHeight: CGFloat) -> CGFloat {
+    public func width(ofFont font: UIFont, maxHeight: CGFloat) -> CGFloat {
         hx.width(
             ofFont: font,
             maxHeight: maxHeight
@@ -92,7 +92,7 @@ extension String: HXPickerCompatibleValue {
     ///   - size: 字体大小
     ///   - maxWidth: 最大宽度
     /// - Returns: 高度
-    func height(ofSize size: CGFloat, maxWidth: CGFloat) -> CGFloat {
+    public func height(ofSize size: CGFloat, maxWidth: CGFloat) -> CGFloat {
         hx.height(
             ofSize: size,
             maxWidth: maxWidth
@@ -104,7 +104,7 @@ extension String: HXPickerCompatibleValue {
     ///   - font: 字体
     ///   - maxWidth: 最大宽度
     /// - Returns: 高度
-    func height(ofFont font: UIFont, maxWidth: CGFloat) -> CGFloat {
+    public func height(ofFont font: UIFont, maxWidth: CGFloat) -> CGFloat {
         hx.height(
             ofFont: font,
             maxWidth: maxWidth

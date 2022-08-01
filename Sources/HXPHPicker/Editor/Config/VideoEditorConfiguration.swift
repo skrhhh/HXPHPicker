@@ -21,6 +21,9 @@ open class VideoEditorConfiguration: EditorConfiguration {
     /// 视频导出是否需要加载框
     public var videoExportNeedProgressHub: Bool = true
     
+    /// 视频导出结束之后是否退出页面
+    public var videoExportFinishAutoDismiss: Bool = true
+    
     /// 编辑控制器的默认状态
     public var defaultState: VideoEditorViewController.State = .normal
     

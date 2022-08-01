@@ -42,7 +42,6 @@ extension VideoEditorViewController: EditorToolViewDelegate {
         }
         if hasAudio || timeRang != .zero || hasSticker {
             let stickerInfos = playerView.stickerView.getStickerInfo()
-            config.videoExportNeedProgressHub = false
             if config.videoExportNeedProgressHub {
                 ProgressHUD.showLoading(
                     addedTo: view,
@@ -87,7 +86,7 @@ extension VideoEditorViewController: EditorToolViewDelegate {
                     NotificationCenter.default.post(name: Notification.Name("exportProgress"), object: nil, userInfo: dict)
                     let progressInt = Int(progress*100)
                     vc.progress = progressInt
-                }else{
+                } else if self.config.videoExportFinishAutoDismiss {
                     self.dismiss(animated: true)
                 }
             }
