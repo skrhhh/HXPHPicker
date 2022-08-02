@@ -24,7 +24,7 @@ open class EditProcessingViewller: UIViewController {
         return but
     }()
     
-    lazy var titleLabel: UILabel = {
+    public lazy var titleLabel: UILabel = {
         let label = UILabel()
         label.text =  "Processing"
         label.textColor = UIColor.white
@@ -32,7 +32,7 @@ open class EditProcessingViewller: UIViewController {
         return label
     }()
     
-    lazy var Video_ProcessingLable: UILabel = {
+    public lazy var Video_ProcessingLable: UILabel = {
         let label = UILabel()
         label.textAlignment = .center
         label.text = "Video Processing…"
@@ -41,7 +41,7 @@ open class EditProcessingViewller: UIViewController {
         return label
     }()
 
-    lazy var hintLabel: UILabel = {
+    public lazy var hintLabel: UILabel = {
         let label = UILabel()
         label.numberOfLines = 0
         label.text = "Please do not lock the screen or switch application."
