@@ -39,7 +39,7 @@ public class EditorCropConfirmView: UIView {
         let finishButton = UIButton.init(type: .custom)
         finishButton.setTitle("完成".localized, for: .normal)
         finishButton.titleLabel?.font = UIFont.mediumPingFang(ofSize: 16)
-        finishButton.layer.cornerRadius = 3
+        finishButton.layer.cornerRadius = 6
         finishButton.layer.masksToBounds = true
         finishButton.addTarget(self, action: #selector(didFinishButtonClick(button:)), for: .touchUpInside)
         return finishButton
@@ -59,7 +59,6 @@ public class EditorCropConfirmView: UIView {
         label.textColor = .white
         label.textAlignment = .center
         label.font = .systemFont(ofSize: 18, weight: .semibold)
-        label.text = "111111"
         return label
     }()
     
@@ -122,13 +121,19 @@ public class EditorCropConfirmView: UIView {
             isDark ? config.cancelButtonTitleDarkColor : config.cancelButtonTitleColor,
             for: .normal
         )
-        cancelButton.setBackgroundImage(
-            UIImage.image(
-                for: isDark ? config.cancelButtonDarkBackgroundColor : config.cancelButtonBackgroundColor,
-                havingSize: .zero
-            ),
-            for: .normal
-        )
+        if let image = config.cancelButtonImage {
+            cancelButton.setImage(image, for: .normal)
+            cancelButton.setTitle(nil, for: .normal)
+        } else {
+            cancelButton.setBackgroundImage(
+                UIImage.image(
+                    for: isDark ? config.cancelButtonDarkBackgroundColor : config.cancelButtonBackgroundColor,
+                    havingSize: .zero
+                ),
+                for: .normal
+            )
+        }
+        
         titleLabel.text = config.configTitleText
         if (isDark && config.cancelButtonDarkBackgroundColor == nil) ||
             (!isDark && config.cancelButtonBackgroundColor == nil) {

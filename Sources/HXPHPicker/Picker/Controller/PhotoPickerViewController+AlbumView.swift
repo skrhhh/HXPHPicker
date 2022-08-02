@@ -78,6 +78,15 @@ extension PhotoPickerViewController: AlbumViewDelegate {
             picker.config.allowLoadPhotoLibrary {
             albumViewHeight += 40
         }
+        let verticalMargin = picker.config.albumList.verticalMargin
+        let horizontalMargin = picker.config.albumList.horizontalMargin
+        albumViewHeight += verticalMargin * 2
+        albumView.tableView.contentInset = UIEdgeInsets(
+            top: verticalMargin,
+            left: horizontalMargin,
+            bottom: verticalMargin,
+            right: horizontalMargin
+        )
         if albumViewHeight > view.height * 0.75 {
             albumViewHeight = view.height * 0.75
         }

@@ -8,7 +8,8 @@
 
 import UIKit
 
-public class AlbumTickView: UIView {
+open class AlbumTickView: UIView {
+    
     public lazy var tickLayer: CAShapeLayer = {
         let tickLayer = CAShapeLayer.init()
         tickLayer.contentsScale = UIScreen.main.scale
@@ -22,7 +23,8 @@ public class AlbumTickView: UIView {
         tickLayer.fillColor = UIColor.clear.cgColor
         return tickLayer
     }()
-    override init(frame: CGRect) {
+    
+    public override init(frame: CGRect) {
         super.init(frame: frame)
         layer.addSublayer(tickLayer)
     }
@@ -31,7 +33,7 @@ public class AlbumTickView: UIView {
         return numerator / 30 * height
     }
     
-    required init?(coder: NSCoder) {
+    required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 }

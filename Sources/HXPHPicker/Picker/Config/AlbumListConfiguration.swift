@@ -35,6 +35,13 @@ public struct AlbumListConfiguration {
     /// cell高度
     public var cellHeight: CGFloat = 100
     
+    /// 顶部底部边距
+    public var verticalMargin: CGFloat = 0
+    
+    /// 左右边缘边距
+    public var horizontalMargin: CGFloat = 0
+
+    
     /// cell背景颜色
     public var cellBackgroundColor: UIColor = .white
     

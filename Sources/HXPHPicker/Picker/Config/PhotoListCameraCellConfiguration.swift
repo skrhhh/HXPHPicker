@@ -26,5 +26,8 @@ public struct PhotoListCameraCellConfiguration {
     /// 暗黑风格下的相机图标 / 相机预览成功之后的图标
     public var cameraDarkImageName: String = "hx_picker_photoList_photograph_white"
     
+    /// 圆角
+    public var cornerRadius: CGFloat = 0.0
+    
     public init() { }
 }

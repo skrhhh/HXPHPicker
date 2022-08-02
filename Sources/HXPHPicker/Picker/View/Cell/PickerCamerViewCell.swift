@@ -103,6 +103,10 @@ class PickerCamerViewCell: UICollectionViewCell {
         super.layoutSubviews()
         captureView.frame = bounds
         imageView.center = CGPoint(x: width * 0.5, y: height * 0.5)
+        
+        guard let config = config else { return }
+        layer.cornerRadius = config.cornerRadius
+        layer.masksToBounds = true
     }
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {

@@ -17,7 +17,7 @@ open class EditProcessingViewller: UIViewController {
         }
     }
     
-    lazy var cancelButton : UIButton = {
+    public lazy var cancelButton : UIButton = {
         let but = UIButton()
         but.setImage(#imageLiteral(resourceName: "close"), for: .normal)
         but.addTarget(self, action: #selector(onClickDismiss), for: .touchUpInside)
@@ -35,7 +35,7 @@ open class EditProcessingViewller: UIViewController {
     public lazy var Video_ProcessingLable: UILabel = {
         let label = UILabel()
         label.textAlignment = .center
-        label.text = "Video Processing…"
+        label.text = "Video Processing..."
         label.font = UIFont.init(name: "PingFangSC-Semibold", size: 20)
         label.textColor = .white
         return label
@@ -44,49 +44,49 @@ open class EditProcessingViewller: UIViewController {
     public lazy var hintLabel: UILabel = {
         let label = UILabel()
         label.numberOfLines = 0
-        label.text = "Please do not lock the screen or switch application."
+        label.text = "Please do not lock the screen or exit."
         label.font = UIFont.systemFont(ofSize: 12)
         label.textColor = .white
         label.textAlignment = .center
         return label
     }()
     
-    lazy var topView: UIView = {
+    public lazy var topView: UIView = {
         let view = UIView()
         view.backgroundColor = .gray
         return view
     }()
-    lazy var leftView: UIView = {
+    public lazy var leftView: UIView = {
         let view = UIView()
         view.backgroundColor = .gray
         return view
     }()
     
-    lazy var bottomView: UIView = {
+    public lazy var bottomView: UIView = {
         let view = UIView()
         view.backgroundColor = .white
         return view
     }()
     
-    lazy var rightView: UIView = {
+    public lazy var rightView: UIView = {
         let view = UIView()
         view.backgroundColor = .white
         return view
     }()
     
-    lazy var showView: UIView = {
+    public lazy var showView: UIView = {
         let view = UIView()
         return view
     }()
     
-    lazy var coverView: UIImageView = {
+    public lazy var coverView: UIImageView = {
         let view = UIImageView()
         view.contentMode = .scaleAspectFill
         view.clipsToBounds = true
         return view
     }()
     
-    lazy var processLabel: UILabel = {
+    public lazy var processLabel: UILabel = {
         let label = UILabel()
         label.text = "0%"
         label.font = .init(name: "PingFangSC-Semibold", size: 32)

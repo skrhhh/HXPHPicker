@@ -258,7 +258,7 @@ class PhotoPickerBottomView: UIToolbar, PhotoPreviewSelectedViewDelegate {
         let finishBtn = UIButton.init(type: .custom)
         finishBtn.setTitle("完成".localized, for: .normal)
         finishBtn.titleLabel?.font = UIFont.mediumPingFang(ofSize: 16)
-        finishBtn.layer.cornerRadius = 3
+        finishBtn.layer.cornerRadius = config.finishButtonCornerRadius
         finishBtn.layer.masksToBounds = true
         finishBtn.isEnabled = false
         finishBtn.addTarget(self, action: #selector(didFinishButtonClick(button:)), for: .touchUpInside)

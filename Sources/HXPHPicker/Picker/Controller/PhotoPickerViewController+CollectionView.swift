@@ -252,7 +252,9 @@ extension PhotoPickerViewController: UICollectionViewDelegate {
             config.languageType = pickerController.config.languageType
             config.appearanceStyle = pickerController.config.appearanceStyle
             config.indicatorType = pickerController.config.indicatorType
-            config.cropView.configTitleText = photoAsset.phAsset?.value(forKey: "filename") as! String
+            if config.cropView.configTitleText == nil {
+                config.cropView.configTitleText = photoAsset.phAsset?.value(forKey: "filename") as! String
+            }
             let videoEditorVC = VideoEditorViewController(
                 photoAsset: photoAsset,
                 editResult: photoAsset.videoEdit,

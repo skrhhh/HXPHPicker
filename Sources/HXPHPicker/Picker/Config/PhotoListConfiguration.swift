@@ -47,6 +47,13 @@ public struct PhotoListConfiguration {
     /// 每个照片之间的间隙
     public var spacing: CGFloat = 1
     
+    /// 水平边缘照片与屏幕边缘之间的距离
+    public var horizaonalMargin: CGFloat = UIDevice.leftMargin
+    
+    /// 顶部边距
+    public var topMargin: CGFloat = 0
+
+    
     /// 允许 Haptic Touch 预览，iOS13 以上
     public var allowHapticTouchPreview: Bool = true
     

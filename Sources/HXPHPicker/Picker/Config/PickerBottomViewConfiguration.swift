@@ -65,6 +65,9 @@ public struct PickerBottomViewConfiguration {
     /// 完成按钮标题颜色
     public var finishButtonTitleColor: UIColor = .white
     
+    /// 完成按钮按钮的圆角半径
+    public var finishButtonCornerRadius: CGFloat = 3
+    
     /// 暗黑风格下完成按钮标题颜色
     public var finishButtonTitleDarkColor: UIColor = .black
     

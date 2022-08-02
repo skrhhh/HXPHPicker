@@ -40,7 +40,7 @@ public final class PhotoManager: NSObject {
     /// 当前语言文件，每次创建PhotoPickerController判断是否需要重新创建
     var languageBundle: Bundle?
     /// 当前语言类型，每次创建PhotoPickerController时赋值
-    var languageType: LanguageType = .system
+    var languageType: LanguageType?
     /// 当前外观样式，每次创建PhotoPickerController时赋值
     var appearanceStyle: AppearanceStyle = .varied
     

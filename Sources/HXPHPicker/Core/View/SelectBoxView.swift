@@ -35,19 +35,19 @@ public final class SelectBoxView: UIControl {
     var textSize: CGSize = CGSize.zero
     public lazy var config: SelectBoxConfiguration = .init()
     
-    lazy var backgroundLayer: CAShapeLayer = {
+    public lazy var backgroundLayer: CAShapeLayer = {
         let backgroundLayer = CAShapeLayer.init()
         backgroundLayer.contentsScale = UIScreen.main.scale
         return backgroundLayer
     }()
-    lazy var textLayer: CATextLayer = {
+    public lazy var textLayer: CATextLayer = {
         let textLayer = CATextLayer.init()
         textLayer.contentsScale = UIScreen.main.scale
         textLayer.alignmentMode = .center
         textLayer.isWrapped = true
         return textLayer
     }()
-    lazy var tickLayer: CAShapeLayer = {
+    public lazy var tickLayer: CAShapeLayer = {
         let tickLayer = CAShapeLayer.init()
         tickLayer.lineJoin = .round
         tickLayer.contentsScale = UIScreen.main.scale
