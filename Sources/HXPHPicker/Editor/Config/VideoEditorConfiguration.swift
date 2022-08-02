@@ -19,10 +19,10 @@ open class VideoEditorConfiguration: EditorConfiguration {
     public var videoExportURL: URL?
     
     /// 视频导出是否需要加载框
-    public var videoExportNeedProgressHub: Bool = true
+    public var videoExportNeedProgressHub: Bool = false
     
     /// 编辑控制器的默认状态
-    public var defaultState: VideoEditorViewController.State = .normal
+    public var defaultState: VideoEditorViewController.State = .cropping
     
     /// 当编辑控制器默认状态是裁剪状态时是否必须裁剪视频
     public var mustBeTailored: Bool = true

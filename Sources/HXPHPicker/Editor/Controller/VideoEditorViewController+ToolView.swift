@@ -43,14 +43,6 @@ extension VideoEditorViewController: EditorToolViewDelegate {
         if hasAudio || timeRang != .zero || hasSticker {
             let stickerInfos = playerView.stickerView.getStickerInfo()
             config.videoExportNeedProgressHub = false
-            if config.videoExportNeedProgressHub {
-                ProgressHUD.showLoading(
-                    addedTo: view,
-                    text: "视频导出中".localized,
-                    animated: true
-                )
-            }
-            
             let vc = EditProcessingViewller()
             vc.modalPresentationStyle = .fullScreen
             let generator = AVAssetImageGenerator(asset: pAVAsset)
@@ -60,7 +52,7 @@ extension VideoEditorViewController: EditorToolViewDelegate {
             let imageRef:CGImage = try! generator.copyCGImage(at: time, actualTime: &actualTime)
             let frameImg = UIImage(cgImage: imageRef)
             vc.coverView.image = frameImg
-            self.navigationController?.present(vc, animated: true){
+            self.present(vc, animated: true){
                 self.exportVideoURL(
                     timeRang: timeRang,
                     hasSticker: hasSticker,

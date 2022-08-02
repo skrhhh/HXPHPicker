@@ -32,6 +32,13 @@ class VideoEditorPlayerView: VideoPlayerView {
         return imageView
     }()
     
+    
+    lazy var playButton: UIButton = {
+        let but = UIButton()
+        but.backgroundColor = .red
+        return but
+    }()
+    
     var cropMargin: CGPoint = .zero
     lazy var stickerView: EditorStickerView = {
         let view = EditorStickerView(frame: .zero)
@@ -52,6 +59,12 @@ class VideoEditorPlayerView: VideoPlayerView {
         super.init()
         addSubview(coverImageView)
         addSubview(stickerView)
+//        addSubview(playButton)
+//        
+//        playButton.width = 100
+//        playButton.height = 100
+//        
+//        playButton.center = super.center
     }
     func configAsset() {
         if let avAsset = avAsset {

@@ -90,6 +90,7 @@ class PhotoEditorView: UIScrollView, UIGestureRecognizerDelegate {
             contentInsetAdjustmentBehavior = .never
         }
         addSubview(imageResizerView)
+
     }
     
     func updateImageViewFrame() {

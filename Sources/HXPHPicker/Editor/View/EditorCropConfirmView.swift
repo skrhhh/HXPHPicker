@@ -53,6 +53,17 @@ public class EditorCropConfirmView: UIView {
         resetButton.addTarget(self, action: #selector(didResetButtonClick(button:)), for: .touchUpInside)
         return resetButton
     }()
+    
+    public lazy var titleLabel: UILabel = {
+        let label = UILabel()
+        label.textColor = .white
+        label.textAlignment = .center
+        label.font = .systemFont(ofSize: 18, weight: .semibold)
+        label.text = "111111"
+        return label
+    }()
+    
+    
     @objc func didFinishButtonClick(button: UIButton) {
         delegate?.cropConfirmView(didFinishButtonClick: self)
         backMethod!()
@@ -73,6 +84,7 @@ public class EditorCropConfirmView: UIView {
         if showReset {
             addSubview(resetButton)
         }
+        addSubview(titleLabel)
         addSubview(cancelButton)
         configColor()
     }
@@ -117,6 +129,7 @@ public class EditorCropConfirmView: UIView {
             ),
             for: .normal
         )
+        titleLabel.text = config.configTitleText
         if (isDark && config.cancelButtonDarkBackgroundColor == nil) ||
             (!isDark && config.cancelButtonBackgroundColor == nil) {
             cancelButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 5)
@@ -148,6 +161,11 @@ public class EditorCropConfirmView: UIView {
         finishButton.height = 33
         finishButton.x = width - finishButton.width - 12 - UIDevice.rightMargin
         finishButton.centerY = 25
+        
+        titleLabel.center = super.center
+        titleLabel.centerY = 25
+        titleLabel.width = 200
+        titleLabel.height = 44
         
         if showReset {
             var resetWidth = (resetButton.currentTitle?.width(
