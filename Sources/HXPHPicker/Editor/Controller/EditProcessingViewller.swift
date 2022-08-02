@@ -8,7 +8,8 @@
 
 import Foundation
 import UIKit
-class EditProcessingViewller: UIViewController {
+
+open class EditProcessingViewller: UIViewController {
     
     var progress: Int = 0 {
         didSet{
@@ -25,7 +26,7 @@ class EditProcessingViewller: UIViewController {
     
     lazy var titleLabel: UILabel = {
         let label = UILabel()
-        label.text =  "Processing".localized
+        label.text =  "Processing"
         label.textColor = UIColor.white
         label.font = .boldSystemFont(ofSize: 18)
         return label
@@ -34,7 +35,7 @@ class EditProcessingViewller: UIViewController {
     lazy var Video_ProcessingLable: UILabel = {
         let label = UILabel()
         label.textAlignment = .center
-        label.text = "Video Processing…".localized
+        label.text = "Video Processing…"
         label.font = UIFont.init(name: "PingFangSC-Semibold", size: 20)
         label.textColor = .white
         return label
@@ -43,7 +44,7 @@ class EditProcessingViewller: UIViewController {
     lazy var hintLabel: UILabel = {
         let label = UILabel()
         label.numberOfLines = 0
-        label.text = "Please do not lock the screen or switch application.".localized
+        label.text = "Please do not lock the screen or switch application."
         label.font = UIFont.systemFont(ofSize: 12)
         label.textColor = .white
         label.textAlignment = .center
@@ -94,7 +95,7 @@ class EditProcessingViewller: UIViewController {
         return label
     }()
     
-    override func viewDidLoad() {
+    open override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
         
