@@ -185,13 +185,18 @@ open class VideoEditorViewController: BaseViewController {
     var didEdited: Bool = false
     var firstPlay: Bool = false
     private var firstLayoutSubviews: Bool = true
-    var videoSize: CGSize = .zero
+    var videoSize: CGSize = .zero {
+        didSet {
+            print("videoSize \(videoSize)")
+        }
+    }
     
     /// 不是在音乐列表选中的音乐数据（不包括搜索）
     var otherMusic: VideoEditorMusic?
     
     lazy var scrollView: ScrollView = {
         let scrollView = ScrollView.init()
+//        scrollView.backgroundColor = UIColor(hexString: "151515")
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.showsVerticalScrollIndicator = false
         scrollView.delegate = self
@@ -308,7 +313,8 @@ open class VideoEditorViewController: BaseViewController {
     lazy var topView: UIView = {
         let view = UIView.init(frame: CGRect(x: 0, y: 0, width: 0, height: 44))
         let cancelBtn = UIButton.init(frame: CGRect(x: 0, y: 0, width: 57, height: 44))
-        cancelBtn.setImage(UIImage.image(for: "hx_editor_back"), for: .normal)
+        cancelBtn.setImage(UIImage(), for: .normal)
+//        cancelBtn.setImage(UIImage.image(for: "hx_editor_back"), for: .normal)
         cancelBtn.addTarget(self, action: #selector(didBackClick), for: .touchUpInside)
         view.addSubview(cancelBtn)
         return view
@@ -329,7 +335,11 @@ open class VideoEditorViewController: BaseViewController {
         return view
     }()
     var isPresentText = false
-    var playerFrame: CGRect = .zero
+    var playerFrame: CGRect = .zero {
+        didSet {
+//            print("playerFrame \(playerFrame)")
+        }
+    }
     var orientationDidChange: Bool = true
     /// 当前裁剪框的位置大小
     var currentValidRect: CGRect = .zero
@@ -465,15 +475,16 @@ open class VideoEditorViewController: BaseViewController {
     }
     open override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        let height = navigationController?.navigationBar.height ?? 44
         toolView.frame = CGRect(
             x: 0,
-            y: 50,
+            y: height,
             width: view.width,
-            height: 50
+            height: height
         )
         toolView.reloadContentInset()
-        topView.width = view.width
-        topView.height = navigationController?.navigationBar.height ?? 44
+//        topView.width = view.width
+//        topView.height = navigationController?.navigationBar.height ?? 44
         if let modalPresentationStyle = navigationController?.modalPresentationStyle, UIDevice.isPortrait {
             if modalPresentationStyle == .fullScreen || modalPresentationStyle == .custom {
                 topView.y = UIDevice.generalStatusBarHeight
@@ -632,6 +643,11 @@ open class VideoEditorViewController: BaseViewController {
         if !playerView.frame.equalTo(playerFrame) && orientationDidChange {
             playerView.frame = playerFrame
         }
+//        if let offsetY = self.navigationController?.navigationBar.height {
+//            self.playerFrame = CGRect(x: 0, y: offsetY, width: playerFrame.width, height: playerFrame.height)
+//        } else {
+//            self.playerFrame = playerFrame
+//        }
         self.playerFrame = playerFrame
         if !scrollView.contentSize.equalTo(playerView.size) {
             scrollView.contentSize = playerView.size
@@ -730,7 +746,15 @@ extension VideoEditorViewController: UIScrollViewDelegate, UIGestureRecognizerDe
         let centerY = scrollView.contentSize.height * 0.5 + offsetY
         playerView.center = CGPoint(x: centerX, y: centerY)
         if state == .cropping {
-            playerView.y = cropVideoRect().minY
+            let width = UIScreen.main.bounds.width
+            let height = UIScreen.main.bounds.height - cropConfirmView.frame.maxY - cropView.frame.height - UIDevice.bottomMargin
+            let frame = CGRect(x: 0,
+                               y: cropConfirmView.frame.maxY,
+                               width: width,
+                               height: height)
+            playerView.frame = frame
+            
+//            playerView.y = cropVideoRect().minY
         }
     }
     class ScrollView: UIScrollView, UIGestureRecognizerDelegate {

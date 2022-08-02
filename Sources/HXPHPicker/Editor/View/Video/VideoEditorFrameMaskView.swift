@@ -13,9 +13,10 @@ protocol VideoEditorFrameMaskViewDelegate: AnyObject {
 }
 
 class VideoEditorFrameMaskView: UIView {
-    let imageWidth: CGFloat = 8
+    let imageWidth: CGFloat = 37
     var validRectX: CGFloat {
-        30 + UIDevice.leftMargin
+//        30 + UIDevice.leftMargin
+        imageWidth * 0.43 + UIDevice.leftMargin
     }
     
     weak var delegate: VideoEditorFrameMaskViewDelegate?
@@ -45,7 +46,7 @@ class VideoEditorFrameMaskView: UIView {
         controlLayer.contentsScale = UIScreen.main.scale
         controlLayer.lineWidth = imageWidth
         controlLayer.fillColor = UIColor.clear.cgColor
-        controlLayer.strokeColor = UIColor.white.cgColor
+        controlLayer.strokeColor = UIColor.clear.cgColor
         return controlLayer
     }()
     lazy var gripMaskLayer: CAShapeLayer = {
@@ -94,16 +95,18 @@ class VideoEditorFrameMaskView: UIView {
         gripMaskLayer.path = gripPath.cgPath
     }
     
-    lazy var leftControl: UIView = {
-        let leftControl = UIView.init()
+    lazy var leftControl: UIImageView = {
+        let leftControl = UIImageView.init()
         leftControl.tag = 0
+        leftControl.image = "left_control".image
         let panGR = UIPanGestureRecognizer.init(target: self, action: #selector(panGestureRecognizerAction(panGR:)))
         leftControl.addGestureRecognizer(panGR)
         return leftControl
     }()
-    lazy var rightControl: UIView = {
-        let rightControl = UIView.init()
+    lazy var rightControl: UIImageView = {
+        let rightControl = UIImageView.init()
         rightControl.tag = 1
+        rightControl.image = "right_control".image
         let panGR = UIPanGestureRecognizer.init(target: self, action: #selector(panGestureRecognizerAction(panGR:)))
         rightControl.addGestureRecognizer(panGR)
         return rightControl

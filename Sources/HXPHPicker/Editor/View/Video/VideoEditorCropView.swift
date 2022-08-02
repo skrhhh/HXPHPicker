@@ -54,6 +54,8 @@ class VideoEditorCropView: UIView {
         collectionView.delegate = self
         collectionView.showsVerticalScrollIndicator = false
         collectionView.showsHorizontalScrollIndicator = false
+        collectionView.layer.cornerRadius = 4.0
+        collectionView.clipsToBounds = true
         if #available(iOS 11.0, *) {
             collectionView.contentInsetAdjustmentBehavior = .never
         }

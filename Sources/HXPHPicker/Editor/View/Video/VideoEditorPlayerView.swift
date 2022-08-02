@@ -27,6 +27,12 @@ class VideoEditorPlayerView: VideoPlayerView {
     var shouldPlay = true
     var readyForDisplayObservation: NSKeyValueObservation?
     
+    override var frame: CGRect {
+        didSet {
+            print("frame \(frame)")
+        }
+    }
+    
     lazy var coverImageView: UIImageView = {
         let imageView = UIImageView.init()
         return imageView

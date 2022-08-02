@@ -153,8 +153,8 @@ public class EditorCropConfirmView: UIView {
             cancelWidth = 60
         }
         cancelButton.width = cancelWidth
-        cancelButton.height = 33
-        cancelButton.centerY = 25
+        cancelButton.height = 32
+        cancelButton.centerY = 20
         
         var finishWidth = (finishButton.currentTitle?.width(
                             ofFont: finishButton.titleLabel!.font,
@@ -163,12 +163,12 @@ public class EditorCropConfirmView: UIView {
             finishWidth = 60
         }
         finishButton.width = finishWidth
-        finishButton.height = 33
+        finishButton.height = 32
         finishButton.x = width - finishButton.width - 12 - UIDevice.rightMargin
-        finishButton.centerY = 25
+        finishButton.centerY = 20
         
         titleLabel.center = super.center
-        titleLabel.centerY = 25
+        titleLabel.centerY = 22
         titleLabel.width = 200
         titleLabel.height = 44
         
