@@ -32,6 +32,7 @@ extension VideoEditorViewController: EditorCropConfirmViewDelegate {
     /// - Parameter cropConfirmView: 裁剪视图
     func cropConfirmView(didCancelButtonClick cropConfirmView: EditorCropConfirmView) {
         playerView.stickerView.isUserInteractionEnabled = true
+        playerView.pause()
         if onceState == .cropping {
             didBackClick()
             return

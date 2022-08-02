@@ -466,9 +466,9 @@ open class VideoEditorViewController: BaseViewController {
         super.viewDidLayoutSubviews()
         toolView.frame = CGRect(
             x: 0,
-            y: view.height - UIDevice.bottomMargin - 50,
+            y: 50,
             width: view.width,
-            height: 50 + UIDevice.bottomMargin
+            height: 50
         )
         toolView.reloadContentInset()
         topView.width = view.width
@@ -481,7 +481,7 @@ open class VideoEditorViewController: BaseViewController {
             topView.y = UIDevice.generalStatusBarHeight
         }
         topMaskLayer.frame = CGRect(x: 0, y: 0, width: view.width, height: topView.frame.maxY + 10)
-        cropView.frame = CGRect(x: 0, y: toolView.y - 100, width: view.width, height: 100)
+        cropView.frame = CGRect(x: 0, y: UIScreen.main.bounds.height - 120, width: view.width, height: 100)
         cropConfirmView.frame = toolView.frame
         scrollView.frame = view.bounds
         if toolOptions.isSticker {

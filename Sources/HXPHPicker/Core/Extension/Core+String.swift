@@ -8,7 +8,6 @@
 
 import UIKit
 import CommonCrypto
-
 extension String: HXPickerCompatibleValue {
     
     public var localized: String { Bundle.localizedString(for: self) }

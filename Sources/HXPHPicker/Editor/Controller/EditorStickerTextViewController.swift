@@ -52,6 +52,7 @@ final class EditorStickerTextViewController: BaseViewController {
     }()
     
     @objc func didCancelButtonClick() {
+        
         dismiss(animated: true, completion: nil)
     }
     

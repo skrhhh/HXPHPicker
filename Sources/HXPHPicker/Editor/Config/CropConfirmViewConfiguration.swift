@@ -45,5 +45,8 @@ public struct CropConfirmViewConfiguration {
     /// 暗黑风格下还原按钮选的背景颜色
     public var resetButtonDarkBackgroundColor: UIColor?
     
+    /// 标题文字
+    public var configTitleText: String?
+    
     public init() { }
 }
