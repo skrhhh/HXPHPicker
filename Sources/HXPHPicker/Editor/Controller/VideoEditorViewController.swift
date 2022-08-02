@@ -300,6 +300,7 @@ open class VideoEditorViewController: BaseViewController {
         cropConfirmView.isHidden = false
         cropConfirmView.delegate = self
         cropConfirmView.backMethod = {
+            self.playerView.pause()
             self.toolView(didFinishButtonClick: self.toolView)
         }
         return cropConfirmView
