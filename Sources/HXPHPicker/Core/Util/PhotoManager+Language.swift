@@ -54,7 +54,10 @@ extension PhotoManager {
                     }
                 }
                 for preferredLanguage in Locale.preferredLanguages {
-                    if preferredLanguage.hasPrefix("zh") {
+                    if preferredLanguage.hasPrefix("en") {
+                        language = "en"
+                        break
+                    }else if preferredLanguage.hasPrefix("zh") {
                         if preferredLanguage.range(of: "Hans") != nil {
                             language = "zh-Hans"
                         }else {
