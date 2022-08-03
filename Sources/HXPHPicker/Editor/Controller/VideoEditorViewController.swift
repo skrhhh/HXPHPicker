@@ -16,7 +16,7 @@ open class VideoEditorViewController: BaseViewController {
     public var exportFinish: Bool = false {
         didSet {
             if let finishResult = finishResult, exportFinish {
-//                delegate?.videoEditorViewController(self, didFinish: finishResult) // 引用而未销毁
+                delegate?.videoEditorViewController(self, didFinish: finishResult)
             }
         }
     }
@@ -696,10 +696,10 @@ open class VideoEditorViewController: BaseViewController {
         stopPlayTimer()
         PhotoManager.shared.stopPlayMusic()
         exportSession?.cancelExport()
-//        playerView?.delegate = nil
-//        playerView = nil
-//        NotificationCenter.default.removeObserver(playerView)
-//        NotificationCenter.default.removeObserver(self)
+        NotificationCenter.default.removeObserver(playerView)
+        playerView?.delegate = nil
+        
+//        playerView?.player.replaceCurrentItem(with: nil)
         
         if let url = networkVideoURL, viewDidDisappearCancelDownload {
             PhotoManager.shared.suspendTask(url)

@@ -86,7 +86,14 @@ public class EditorCropConfirmView: UIView {
         addSubview(titleLabel)
         addSubview(cancelButton)
         configColor()
+
+        setLocalized()
     }
+    
+    open func setLocalized() {
+        
+    }
+    
     func configColor() {
         let isDark = PhotoManager.isDark
         finishButton.setTitleColor(
