@@ -103,7 +103,12 @@ extension VideoEditorViewController: EditorToolViewDelegate {
                     let progressInt = Int(progress*100)
                     print("progress \(progressInt)")
                 } else if self.config.videoExportFinishAutoDismiss {
-                    self.exportFinish = true
+//                    self.exportFinish = true
+                    
+//                    guard let finishResult = self.finishResult else { return }
+//                    let dict: [String: VideoEditResult] = ["finishResult": finishResult]
+//                    NotificationCenter.default.post(name: Notification.Name("exportFinish"), object: nil, userInfo: dict)
+                    
                     self.dismiss(animated: true)
                 }
             }
@@ -133,20 +138,15 @@ extension VideoEditorViewController: EditorToolViewDelegate {
                                             playStartTime: playStartTime,
                                             playEndTime: playEndTime,
                                             volume: volume)
-//                    self.backAction()
+                    self.backAction()
                     
-//                    //获取根VC
-//                    var rootVC = self.presentingViewController
-//                    while let parent = rootVC?.presentingViewController {
-//                         rootVC = parent
-//                    }
-//                    //释放所有下级视图
-//                    rootVC?.dismiss(animated:  false) {
-//                        self.editFinishCallBack(videoURL,
-//                                                playStartTime: playStartTime,
-//                                                playEndTime: playEndTime,
-//                                                volume: volume)
-//                    }
+                    //获取根VC
+                    var rootVC = self.presentingViewController
+                    while let parent = rootVC?.presentingViewController {
+                         rootVC = parent
+                    }
+                    //释放所有下级视图
+                    rootVC?.dismiss(animated: false)
                 } else {
                     self.showErrorHUD()
                 }
@@ -203,18 +203,18 @@ extension VideoEditorViewController: EditorToolViewDelegate {
         )
         finishResult = editResult
         if !exportBackground { // 非广告时
-            exportFinish = true
-//            delegate?.videoEditorViewController(self, didFinish: editResult)
+//            exportFinish = true
+            delegate?.videoEditorViewController(self, didFinish: editResult)
         }
     }
     
     @objc func adClose () {
         exportBackground = false
-        guard let finishResult = finishResult else { return }
         if exportTimer?.isValid == false {
-            exportFinish = true
+//            exportFinish = true
         }
-//        delegate?.videoEditorViewController(self, didFinish: finishResult)
+        guard let finishResult = finishResult else { return }
+        delegate?.videoEditorViewController(self, didFinish: finishResult)
     }
     
     func toolView(_ toolView: EditorToolView, didSelectItemAt model: EditorToolOptions) {
