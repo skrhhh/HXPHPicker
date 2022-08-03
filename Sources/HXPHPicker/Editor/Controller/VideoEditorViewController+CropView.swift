@@ -63,16 +63,23 @@ extension VideoEditorViewController: VideoEditorCropViewDelegate {
         let playTimer = DispatchSource.makeTimerSource()
         var microseconds: Double
         if reset {
+            print("startPlayTimer reset")
             microseconds = (endTime.seconds - startTime.seconds) * 1000000
         }else {
+            print("startPlayTimer")
             let seconds = playerView.player.currentTime().seconds - cropView.getStartTime(real: true).seconds
             microseconds = seconds * 1000000
         }
-        guard microseconds > 0 else {
-            self.playerView?.resetPlay()
-            return
-        } //处理崩溃
-        playTimer.schedule(deadline: .now(), repeating: .microseconds(Int(microseconds)), leeway: .microseconds(0))
+        
+        //处理崩溃
+        if microseconds > 0 {
+            playTimer.schedule(deadline: .now(), repeating: .microseconds(Int(microseconds)), leeway: .microseconds(0))
+        } else {
+            if let duration = playerView.player.currentItem?.duration {
+                playTimer.schedule(deadline: .now(), repeating: .microseconds(Int(duration.seconds)))
+            }
+        }
+        
         playTimer.setEventHandler(handler: {
             DispatchQueue.main.sync {
                 self.playerView?.resetPlay()
