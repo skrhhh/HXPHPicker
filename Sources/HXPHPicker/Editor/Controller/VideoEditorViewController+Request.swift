@@ -68,7 +68,7 @@ extension VideoEditorViewController {
             }else {
                 playerFrame = PhotoTools.transformImageSize(videoSize, to: view)
             }
-            playerView.stickerView.setStickerData(
+            playerView?.stickerView.setStickerData(
                 stickerData: stickerData,
                 viewSize: playerFrame.size
             )
@@ -77,15 +77,15 @@ extension VideoEditorViewController {
                 otherMusic = stickerData.items[stickerData.LyricIndex].item.music
             }
         }
-        playerView.avAsset = avAsset
-        playerView.configAsset()
+        playerView?.avAsset = avAsset
+        playerView?.configAsset()
         cropView.avAsset = avAsset
         if orientationDidChange {
             setCropViewFrame()
         }
         if state == .cropping {
             pState = .normal
-            if playerView.playerLayer.isReadyForDisplay {
+            if playerView?.playerLayer.isReadyForDisplay == true {
                 firstPlay = false
                 croppingAction()
             }
@@ -93,7 +93,7 @@ extension VideoEditorViewController {
             setPlayerViewFrame()
         }
         if let editResult = editResult {
-            playerView.player.volume = editResult.videoSoundVolume
+            playerView?.player.volume = editResult.videoSoundVolume
             musicView.originalSoundButton.isSelected = editResult.videoSoundVolume > 0
             if let audioURL = editResult.backgroundMusicURL {
                 backgroundMusicPath = audioURL.path

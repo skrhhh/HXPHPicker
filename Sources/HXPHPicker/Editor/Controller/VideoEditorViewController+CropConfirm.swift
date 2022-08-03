@@ -13,6 +13,7 @@ extension VideoEditorViewController: EditorCropConfirmViewDelegate {
     /// 点击完成按钮
     /// - Parameter cropConfirmView: 裁剪视图
     func cropConfirmView(didFinishButtonClick cropConfirmView: EditorCropConfirmView) {
+        guard let playerView = playerView else { return }
         playerView.stickerView.isUserInteractionEnabled = false
         if onceState == .cropping {
             onceState = .cropping
@@ -31,12 +32,13 @@ extension VideoEditorViewController: EditorCropConfirmViewDelegate {
     /// 点击取消按钮
     /// - Parameter cropConfirmView: 裁剪视图
     func cropConfirmView(didCancelButtonClick cropConfirmView: EditorCropConfirmView) {
-        playerView.stickerView.isUserInteractionEnabled = true
-        playerView.pause()
         if onceState == .cropping {
             didBackClick()
             return
         }
+        guard let playerView = playerView else { return }
+        playerView.stickerView.isUserInteractionEnabled = true
+        playerView.pause()
         pState = .normal
         cropView.stopScroll()
         cropView.stopLineAnimation()

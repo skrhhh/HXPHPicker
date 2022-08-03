@@ -90,12 +90,14 @@ public class EditorCropConfirmView: UIView {
     func configColor() {
         let isDark = PhotoManager.isDark
         finishButton.setTitleColor(
-            isDark ? config.finishButtonTitleDarkColor : config.finishButtonTitleColor,
+//            isDark ? config.finishButtonTitleDarkColor : config.finishButtonTitleColor,
+            .black, //写死
             for: .normal
         )
         finishButton.setBackgroundImage(
             UIImage.image(
-                for: isDark ? config.finishButtonDarkBackgroundColor : config.finishButtonBackgroundColor,
+//                for: isDark ? config.finishButtonDarkBackgroundColor : config.finishButtonBackgroundColor,
+                for: .white, // 他娘的天天加班到凌晨2、3点，真不想搞了，写死
                 havingSize: .zero
             ),
             for: .normal

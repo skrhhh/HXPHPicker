@@ -12,6 +12,9 @@ Pod::Spec.new do |spec|
     spec.requires_arc           = true
     
     spec.default_subspec        = 'Full'
+
+    spec.dependency 'SnapKit', '~> 5.6.0'
+    spec.dependency 'HBDNavigationBar', '~> 1.9.5'
   
     spec.subspec 'Core' do |core|
         core.source_files   = "Sources/HXPHPicker/Core/**/*.{swift}"

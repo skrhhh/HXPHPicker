@@ -10,6 +10,7 @@ import UIKit
 import MobileCoreServices
 import AVFoundation
 import Photos
+import HBDNavigationBar
 
 public class PhotoPickerViewController: BaseViewController {
     let config: PhotoListConfiguration
@@ -297,6 +298,7 @@ public class PhotoPickerViewController: BaseViewController {
     }
     public override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+//        navigationController?.setNavigationBarHidden(true, animated: true)
         pickerController?.viewControllersWillAppear(self)
     }
     public override func viewDidAppear(_ animated: Bool) {

@@ -34,19 +34,19 @@ extension VideoEditorViewController: VideoEditorCropViewDelegate {
     func pausePlay(at time: CMTime) {
         if state == .cropping && !orientationDidChange {
             stopPlayTimer()
-            playerView.shouldPlay = false
-            playerView.playStartTime = time
-            playerView.pause()
-            playerView.seek(to: time)
+            playerView?.shouldPlay = false
+            playerView?.playStartTime = time
+            playerView?.pause()
+            playerView?.seek(to: time)
             cropView.stopLineAnimation()
         }
     }
     func startPlay(at time: CMTime) {
         if state == .cropping && !orientationDidChange {
-            playerView.playStartTime = time
-            playerView.playEndTime = cropView.getEndTime(real: true)
-            playerView.resetPlay()
-            playerView.shouldPlay = true
+            playerView?.playStartTime = time
+            playerView?.playEndTime = cropView.getEndTime(real: true)
+            playerView?.resetPlay()
+            playerView?.shouldPlay = true
             startPlayTimer()
         }
     }
@@ -59,6 +59,7 @@ extension VideoEditorViewController: VideoEditorCropViewDelegate {
     }
     func startPlayTimer(reset: Bool = true, startTime: CMTime, endTime: CMTime) {
         stopPlayTimer()
+        guard let playerView = playerView, playerView.player.currentItem != nil else { return }
         let playTimer = DispatchSource.makeTimerSource()
         var microseconds: Double
         if reset {
@@ -67,10 +68,14 @@ extension VideoEditorViewController: VideoEditorCropViewDelegate {
             let seconds = playerView.player.currentTime().seconds - cropView.getStartTime(real: true).seconds
             microseconds = seconds * 1000000
         }
+        guard microseconds > 0 else {
+            self.playerView?.resetPlay()
+            return
+        } //处理崩溃
         playTimer.schedule(deadline: .now(), repeating: .microseconds(Int(microseconds)), leeway: .microseconds(0))
         playTimer.setEventHandler(handler: {
             DispatchQueue.main.sync {
-                self.playerView.resetPlay()
+                self.playerView?.resetPlay()
             }
         })
         playTimer.resume()

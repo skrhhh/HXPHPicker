@@ -29,7 +29,7 @@ class VideoEditorPlayerView: VideoPlayerView {
     
     override var frame: CGRect {
         didSet {
-            print("frame \(frame)")
+//            print("frame \(frame)")
         }
     }
     
@@ -156,7 +156,7 @@ class VideoEditorPlayerView: VideoPlayerView {
         }
     }
     func setupStickerViewFrame() {
-        stickerView.frame = bounds
+//        stickerView.frame = bounds
     }
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -167,6 +167,7 @@ class VideoEditorPlayerView: VideoPlayerView {
         fatalError("init(coder:) has not been implemented")
     }
     deinit {
+        print("VideoEditorPlayerView deinit")
         readyForDisplayObservation = nil
         NotificationCenter.default.removeObserver(self)
     }

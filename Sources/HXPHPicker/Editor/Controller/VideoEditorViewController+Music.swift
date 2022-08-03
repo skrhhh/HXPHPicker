@@ -10,7 +10,7 @@ import UIKit
 // MARK: VideoEditorMusicViewDelegate
 extension VideoEditorViewController: VideoEditorMusicViewDelegate {
     func musicView(_ musicView: VideoEditorMusicView, didShowLyricButton isSelected: Bool, music: VideoEditorMusic?) {
-        playerView.stickerView.removeAudioView()
+        playerView?.stickerView.removeAudioView()
         if !isSelected {
             return
         }
@@ -24,7 +24,7 @@ extension VideoEditorViewController: VideoEditorMusicViewDelegate {
         if item.music == nil {
             return
         }
-        playerView.stickerView.add(sticker: item, isSelected: false)
+        playerView?.stickerView.add(sticker: item, isSelected: false)
     }
     func musicView(_ musicView: VideoEditorMusicView, didSelectMusic audioPath: String?) {
         backgroundMusicPath = audioPath
@@ -32,7 +32,7 @@ extension VideoEditorViewController: VideoEditorMusicViewDelegate {
     }
     func musicView(deselectMusic musicView: VideoEditorMusicView) {
         backgroundMusicPath = nil
-        playerView.stickerView.removeAudioView()
+        playerView?.stickerView.removeAudioView()
     }
     func musicView(didSearchButton musicView: VideoEditorMusicView) {
         searchMusicView.searchView.becomeFirstResponder()
@@ -43,9 +43,9 @@ extension VideoEditorViewController: VideoEditorMusicViewDelegate {
     }
     func musicView(_ musicView: VideoEditorMusicView, didOriginalSoundButtonClick isSelected: Bool) {
         if isSelected {
-            playerView.player.volume = 1
+            playerView?.player.volume = 1
         }else {
-            playerView.player.volume = 0
+            playerView?.player.volume = 0
         }
     }
 }

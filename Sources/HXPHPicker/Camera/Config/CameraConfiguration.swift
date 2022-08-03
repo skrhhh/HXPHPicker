@@ -27,7 +27,7 @@ public class CameraConfiguration: BaseConfiguration {
     public var videoMinimumDuration: TimeInterval = 1
     
     /// 主题色
-    public var tintColor: UIColor = .systemTintColor {
+    public var tintColor: UIColor = .white {
         didSet {
             #if HXPICKER_ENABLE_EDITOR
             setupEditorColor()

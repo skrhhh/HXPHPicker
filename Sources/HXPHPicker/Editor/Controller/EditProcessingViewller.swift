@@ -17,6 +17,8 @@ open class EditProcessingViewller: UIViewController {
         }
     }
     
+    var exitClosure: (() -> Void)? = nil
+    
     public lazy var cancelButton : UIButton = {
         let but = UIButton()
         but.setImage(#imageLiteral(resourceName: "close"), for: .normal)
@@ -100,9 +102,25 @@ open class EditProcessingViewller: UIViewController {
         view.backgroundColor = .black
         
         setupUI()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(exportProgress(_:)), name: NSNotification.Name(rawValue: "exportProgress"), object: nil)
     }
     
+    @objc func exportProgress(_ notification: Notification) {
+        if let dic = notification.userInfo as? [String: Float], let progress = dic["progress"] as? Float {
+            self.progress = Int(progress*100)
+        }
+    }
     
+    open override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+//        exitClosure?()
+    }
+    
+    deinit {
+        print("EditProcessingViewller deinit")
+        exitClosure?()
+    }
 }
 
 extension EditProcessingViewller {

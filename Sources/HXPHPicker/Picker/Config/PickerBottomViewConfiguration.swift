@@ -78,7 +78,7 @@ public struct PickerBottomViewConfiguration {
     public var finishButtonDisableTitleDarkColor: UIColor = .black.withAlphaComponent(0.6)
     
     /// 完成按钮选中时的背景颜色
-    public var finishButtonBackgroundColor: UIColor = .systemTintColor
+    public var finishButtonBackgroundColor: UIColor = .white//.systemTintColor
     
     /// 暗黑风格下完成按钮选中时的背景颜色
     public var finishButtonDarkBackgroundColor: UIColor = .white

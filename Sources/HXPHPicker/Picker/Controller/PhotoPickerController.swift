@@ -373,19 +373,21 @@ extension PhotoPickerController {
                                ]
         navigationBar.titleTextAttributes = titleTextAttributes
         let tintColor = isDark ? config.navigationDarkTintColor : config.navigationTintColor
-        navigationBar.tintColor = tintColor
+        navigationBar.tintColor = .white //tintColor
         let barStyle = isDark ? config.navigationBarDarkStyle : config.navigationBarStyle
         navigationBar.barStyle = barStyle
         
         if #available(iOS 15.0, *) {
             let appearance = UINavigationBarAppearance()
             appearance.titleTextAttributes = titleTextAttributes
-            switch barStyle {
-            case .default:
-                appearance.backgroundEffect = UIBlurEffect(style: .light)
-            default:
-                appearance.backgroundEffect = UIBlurEffect(style: .dark)
-            }
+            appearance.backgroundEffect = nil
+            appearance.backgroundImage = UIImage(color: .black)
+//            switch barStyle {
+//            case .default:
+//                appearance.backgroundEffect = UIBlurEffect(style: .light)
+//            default:
+//                appearance.backgroundEffect = UIBlurEffect(style: .dark)
+//            }
             navigationBar.standardAppearance = appearance
             navigationBar.scrollEdgeAppearance = appearance
         }
@@ -474,5 +476,20 @@ extension PhotoPickerController {
         }
         PhotoManager.shared.saveCameraPreview()
         pickerDelegate?.pickerController(self, didDismissComplete: cameraAssetArray)
+    }
+}
+
+public extension UIImage {
+
+    convenience init?(color: UIColor, size: CGSize = CGSize(width: 1, height: 1)) {
+        let rect = CGRect(origin: .zero, size: size)
+        UIGraphicsBeginImageContextWithOptions(rect.size, false, 0.0)
+        color.setFill()
+        UIRectFill(rect)
+        let image = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        guard let cgImage = image?.cgImage else { return nil }
+        self.init(cgImage: cgImage)
     }
 }

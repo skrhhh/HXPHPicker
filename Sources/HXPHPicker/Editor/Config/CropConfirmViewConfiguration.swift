@@ -16,7 +16,7 @@ public struct CropConfirmViewConfiguration {
     public var finishButtonTitleDarkColor: UIColor = .white
     
     /// 完成按钮的背景颜色
-    public var finishButtonBackgroundColor: UIColor = .systemTintColor
+    public var finishButtonBackgroundColor: UIColor = .white//.systemTintColor
     
     /// 暗黑风格下完成按钮选的背景颜色
     public var finishButtonDarkBackgroundColor: UIColor = .systemTintColor

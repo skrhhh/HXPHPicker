@@ -14,7 +14,8 @@ extension VideoEditorViewController: EditorToolViewDelegate {
     /// 导出视频
     /// - Parameter toolView: 底部工具视频
     func toolView(didFinishButtonClick toolView: EditorToolView) {
-        playerView.stickerView.deselectedSticker()
+        playerView?.stickerView.deselectedSticker()
+        guard let playerView = playerView else { return }
         let hasSticker = playerView.stickerView.count > 0
         let timeRang: CMTimeRange
         if let startTime = playerView.playStartTime,
@@ -42,6 +43,8 @@ extension VideoEditorViewController: EditorToolViewDelegate {
         }
         if hasAudio || timeRang != .zero || hasSticker {
             let stickerInfos = playerView.stickerView.getStickerInfo()
+            
+            exportCancel = false
             let vc = EditProcessingViewller()
             vc.modalPresentationStyle = .fullScreen
             let generator = AVAssetImageGenerator(asset: pAVAsset)
@@ -51,11 +54,28 @@ extension VideoEditorViewController: EditorToolViewDelegate {
             let imageRef:CGImage = try! generator.copyCGImage(at: time, actualTime: &actualTime)
             let frameImg = UIImage(cgImage: imageRef)
             vc.coverView.image = frameImg
+            // deinit
+            vc.exitClosure = { [weak self] in
+                guard let self = self else { return }
+                self.exportTimer?.invalidate()
+                self.exportTimer = nil
+                self.exportSession?.cancelExport()
+                self.exportSession = nil
+                self.exportCancel = true
+            }
+            
+            guard let playStartTime = playerView.playStartTime,
+                  let playEndTime = playerView.playEndTime else { return }
+            let volume = playerView.player.volume
+            
             self.present(vc, animated: true){
                 self.exportVideoURL(
                     timeRang: timeRang,
+                    playStartTime: playStartTime,
+                    playEndTime: playEndTime,
+                    volume: volume,
                     hasSticker: hasSticker,
-                    stickerInfos: stickerInfos, vc: vc
+                    stickerInfos: stickerInfos
                 )
             }
             return
@@ -65,20 +85,25 @@ extension VideoEditorViewController: EditorToolViewDelegate {
     }
     func exportVideoURL(
         timeRang: CMTimeRange,
+        playStartTime: CMTime,
+        playEndTime: CMTime,
+        volume: Float,
         hasSticker: Bool,
-        stickerInfos: [EditorStickerInfo],
-        vc: EditProcessingViewller
+        stickerInfos: [EditorStickerInfo]
     ) {
         // initialize timer
-        self.exportTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
+        guard exportCancel == false else { return }
+        self.exportTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
             // Get Progress
             if let progress = self.exportSession?.progress {
                 if (progress < 0.99) {
                     let dict: [String: Float] = ["progress": progress]
                     NotificationCenter.default.post(name: Notification.Name("exportProgress"), object: nil, userInfo: dict)
                     let progressInt = Int(progress*100)
-                    vc.progress = progressInt
+                    print("progress \(progressInt)")
                 } else if self.config.videoExportFinishAutoDismiss {
+                    self.exportFinish = true
                     self.dismiss(animated: true)
                 }
             }
@@ -96,25 +121,46 @@ extension VideoEditorViewController: EditorToolViewDelegate {
                 stickerInfos: stickerInfos,
                 audioURL: audioURL,
                 audioVolume: self.backgroundMusicVolume,
-                originalAudioVolume: self.playerView.player.volume,
+                originalAudioVolume: volume,
                 exportPreset: self.config.exportPreset,
                 videoQuality: self.config.videoQuality
             )  {  [weak self] videoURL, error in
-                    self?.exportTimer?.invalidate()
-                    if let videoURL = videoURL {
-                        self?.editFinishCallBack(videoURL)
-                        self?.backAction()
-                    }else {
-                        self?.showErrorHUD()
-                    }
+                guard let self = self else { return }
+                guard self.exportCancel == false else { return }
+                self.exportTimer?.invalidate()
+                if let videoURL = videoURL {
+                    self.editFinishCallBack(videoURL,
+                                            playStartTime: playStartTime,
+                                            playEndTime: playEndTime,
+                                            volume: volume)
+//                    self.backAction()
+                    
+//                    //获取根VC
+//                    var rootVC = self.presentingViewController
+//                    while let parent = rootVC?.presentingViewController {
+//                         rootVC = parent
+//                    }
+//                    //释放所有下级视图
+//                    rootVC?.dismiss(animated:  false) {
+//                        self.editFinishCallBack(videoURL,
+//                                                playStartTime: playStartTime,
+//                                                playEndTime: playEndTime,
+//                                                volume: volume)
+//                    }
+                } else {
+                    self.showErrorHUD()
                 }
+            }
         }
     }
     func showErrorHUD() {
         ProgressHUD.hide(forView: view, animated: true)
         ProgressHUD.showWarning(addedTo: view, text: "导出失败".localized, animated: true, delayHide: 1.5)
     }
-    func editFinishCallBack(_ videoURL: URL) {
+    func editFinishCallBack(_ videoURL: URL,
+                            playStartTime: CMTime,
+                            playEndTime: CMTime,
+                            volume: Float) {
         if let currentCropOffset = currentCropOffset {
             rotateBeforeStorageData = cropView.getRotateBeforeData(
                 offsetX: currentCropOffset.x,
@@ -124,13 +170,11 @@ extension VideoEditorViewController: EditorToolViewDelegate {
         }
         rotateBeforeData = cropView.getRotateBeforeData()
         var cropData: VideoCropData?
-        if let startTime = playerView.playStartTime,
-           let endTime = playerView.playEndTime,
-           let rotateBeforeStorageData = rotateBeforeStorageData,
+        if let rotateBeforeStorageData = rotateBeforeStorageData,
            let rotateBeforeData = rotateBeforeData {
             cropData = VideoCropData(
-                startTime: startTime.seconds,
-                endTime: endTime.seconds,
+                startTime: playStartTime.seconds,
+                endTime: playEndTime.seconds,
                 preferredTimescale: avAsset.duration.timescale,
                 cropingData: .init(
                     offsetX: rotateBeforeStorageData.0,
@@ -148,20 +192,34 @@ extension VideoEditorViewController: EditorToolViewDelegate {
         if let audioPath = backgroundMusicPath {
             backgroundMusicURL = URL(fileURLWithPath: audioPath)
         }
-        let stickerData = playerView.stickerView.stickerData()
+        
         let editResult = VideoEditResult(
             editedURL: videoURL,
             cropData: cropData,
-            videoSoundVolume: playerView.player.volume,
+            videoSoundVolume: volume,
             backgroundMusicURL: backgroundMusicURL,
             backgroundMusicVolume: backgroundMusicVolume,
-            stickerData: stickerData
+            stickerData: nil
         )
-        delegate?.videoEditorViewController(self, didFinish: editResult)
+        finishResult = editResult
+        if !exportBackground { // 非广告时
+            exportFinish = true
+//            delegate?.videoEditorViewController(self, didFinish: editResult)
+        }
     }
+    
+    @objc func adClose () {
+        exportBackground = false
+        guard let finishResult = finishResult else { return }
+        if exportTimer?.isValid == false {
+            exportFinish = true
+        }
+//        delegate?.videoEditorViewController(self, didFinish: finishResult)
+    }
+    
     func toolView(_ toolView: EditorToolView, didSelectItemAt model: EditorToolOptions) {
-        playerView.stickerView.isUserInteractionEnabled = false
-        playerView.stickerView.deselectedSticker()
+        playerView?.stickerView.isUserInteractionEnabled = false
+        playerView?.stickerView.deselectedSticker()
         if model.type == .music {
             if let shouldClick = delegate?.videoEditorViewController(shouldClickMusicTool: self),
                !shouldClick {
@@ -198,7 +256,7 @@ extension VideoEditorViewController: EditorToolViewDelegate {
             hidenTopView()
             showChartletView()
         }else if model.type == .text {
-            playerView.stickerView.isUserInteractionEnabled = true
+            playerView?.stickerView.isUserInteractionEnabled = true
             if config.text.modalPresentationStyle == .fullScreen {
                 isPresentText = true
             }
@@ -233,9 +291,10 @@ extension VideoEditorViewController: EditorToolViewDelegate {
     
     /// 进入裁剪界面
     func croppingAction() {
+        
         if state == .normal {
-            beforeStartTime = playerView.playStartTime
-            beforeEndTime = playerView.playEndTime
+            beforeStartTime = playerView?.playStartTime
+            beforeEndTime = playerView?.playEndTime
             if let offset = currentCropOffset {
                 cropView.collectionView.setContentOffset(offset, animated: false)
             }else {
@@ -246,17 +305,19 @@ extension VideoEditorViewController: EditorToolViewDelegate {
             if currentValidRect.equalTo(.zero) {
                 cropView.resetValidRect()
             }else {
-                cropView.frameMaskView.validRect = currentValidRect
-                cropView.startLineAnimation(at: playerView.player.currentTime())
+                if let playerView = playerView {
+                    cropView.frameMaskView.validRect = currentValidRect
+                    cropView.startLineAnimation(at: playerView.player.currentTime())
+                }
             }
-            playerView.playStartTime = cropView.getStartTime(real: true)
-            playerView.playEndTime = cropView.getEndTime(real: true)
+            playerView?.playStartTime = cropView.getStartTime(real: true)
+            playerView?.playEndTime = cropView.getEndTime(real: true)
             cropConfirmView.isHidden = false
             cropView.isHidden = false
             cropView.updateTimeLabels()
             pState = .cropping
             if currentValidRect.equalTo(.zero) {
-                playerView.resetPlay()
+                playerView?.resetPlay()
                 startPlayTimer()
             }
             hidenTopView()
@@ -275,7 +336,7 @@ extension VideoEditorViewController: EditorStickerTextViewControllerDelegate {
         _ controller: EditorStickerTextViewController,
         didFinish stickerItem: EditorStickerItem
     ) {
-        playerView.stickerView.update(item: stickerItem)
+        playerView?.stickerView.update(item: stickerItem)
     }
     
     func stickerTextViewController(
@@ -287,7 +348,7 @@ extension VideoEditorViewController: EditorStickerTextViewControllerDelegate {
             imageData: nil,
             text: stickerText
         )
-        playerView.stickerView.add(
+        playerView?.stickerView.add(
             sticker: item,
             isSelected: false
         )

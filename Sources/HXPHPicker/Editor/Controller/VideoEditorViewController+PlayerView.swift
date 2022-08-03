@@ -114,7 +114,7 @@ extension VideoEditorViewController: EditorChartletViewDelegate {
             imageData: imageData,
             text: nil
         )
-        playerView.stickerView.add(sticker: item, isSelected: false)
+        playerView?.stickerView.add(sticker: item, isSelected: false)
         singleTap()
     }
 }
