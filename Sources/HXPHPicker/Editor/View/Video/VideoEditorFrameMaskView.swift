@@ -13,10 +13,11 @@ protocol VideoEditorFrameMaskViewDelegate: AnyObject {
 }
 
 class VideoEditorFrameMaskView: UIView {
-    let imageWidth: CGFloat = 37
+    let imageWidth: CGFloat = 15
     var validRectX: CGFloat {
+        26.5
 //        30 + UIDevice.leftMargin
-        imageWidth * 0.43 + UIDevice.leftMargin
+//        imageWidth * 0.43 + UIDevice.leftMargin
     }
     
     weak var delegate: VideoEditorFrameMaskViewDelegate?
